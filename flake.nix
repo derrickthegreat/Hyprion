@@ -1,5 +1,5 @@
 {
-  description = "HyDE - HyprDots Environment";
+  description = "Hyprion - an opinionated HyDE fork";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";

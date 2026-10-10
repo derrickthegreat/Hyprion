@@ -1,7 +1,7 @@
 # Use for instalation script until we refactor the whole installation stack
 [global]
     action       = "preserve"                                 #
-    git          = "https://github.com/HyDE-Project/HyDE.git"
+    git          = "https://github.com/derrickthegreat/Hyprion.git"
     git_branch   = "lua"
     owner        = "The HyDE Project"                         #
     post_command = "hyprctl reload"

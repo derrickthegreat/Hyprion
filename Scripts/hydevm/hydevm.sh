@@ -9,7 +9,7 @@ set -e
 CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/hydevm"
 BASE_IMAGE="$CACHE_DIR/archbase.qcow2"
 SNAPSHOTS_DIR="$CACHE_DIR/snapshots"
-HYDE_REPO="https://github.com/HyDE-Project/HyDE.git"
+HYDE_REPO="https://github.com/derrickthegreat/Hyprion.git"
 # Required packages for Arch Linux
 ARCH_PACKAGES=(
     "qemu-desktop"

@@ -1,8 +1,9 @@
-<div align = center>
-  
-<a href="https://discord.gg/AYbJ9MJez7">
-    <img alt="Dynamic JSON Badge" src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fdiscordapp.com%2Fapi%2Finvites%2FmT5YqjaJFh%3Fwith_counts%3Dtrue&query=%24.approximate_member_count&suffix=%20members&style=for-the-badge&logo=discord&logoSize=auto&label=The%20HyDe%20Project&labelColor=ebbcba&color=c79bf0">
-  </a>
+<div align="center">
+
+# Hyprion
+
+An opinionated HyDE fork for Hyprland.
+
 </div>
 
 ###### _<div align="right"><a id=-design-by-t2></a><sub>// design by t2</sub></div>_
@@ -10,10 +11,11 @@
 ![hyde_banner](Source/assets/hyde_banner.png)
 
 > [!NOTE]
-> This is an independently maintained fork of [HyDE-Project/HyDE](https://github.com/HyDE-Project/HyDE).
+> Hyprion is an independently maintained fork of [HyDE-Project/HyDE](https://github.com/HyDE-Project/HyDE).
 > It tracks Hyprland releases on its own schedule, has a single `main` branch, and carries fixes
-> upstream has not taken. Upstream's wiki, Discord and theme gallery links below still point at
-> the original project. See [CONTRIBUTING.md](CONTRIBUTING.md) for how this fork is run.
+> upstream has not taken. HyDE's tooling keeps its names (`hyde-shell`, `~/.config/hyde`, `HYDE_*`),
+> so most HyDE documentation still applies. Upstream's wiki, Discord and theme gallery links below
+> still point at the original project. See [CONTRIBUTING.md](CONTRIBUTING.md) for how this fork is run.
 
 <!--
 Multi-language README support
@@ -75,7 +77,7 @@ Check this out for the full note:
 ---
 
 The installation script is designed for a minimal [Arch Linux](https://wiki.archlinux.org/title/Arch_Linux) install, but **may** work on some [Arch-based distros](https://wiki.archlinux.org/title/Arch-based_distributions).
-While installing HyDE alongside another [DE](https://wiki.archlinux.org/title/Desktop_environment)/[WM](https://wiki.archlinux.org/title/Window_manager) should work, due to it being a heavily customized setup, it **will** conflict with your [GTK](https://wiki.archlinux.org/title/GTK)/[Qt](https://wiki.archlinux.org/title/Qt) theming, [Shell](https://wiki.archlinux.org/title/Command-line_shell), [SDDM](https://wiki.archlinux.org/title/SDDM), [GRUB](https://wiki.archlinux.org/title/GRUB), etc. and is at your own risk.
+While installing Hyprion alongside another [DE](https://wiki.archlinux.org/title/Desktop_environment)/[WM](https://wiki.archlinux.org/title/Window_manager) should work, due to it being a heavily customized setup, it **will** conflict with your [GTK](https://wiki.archlinux.org/title/GTK)/[Qt](https://wiki.archlinux.org/title/Qt) theming, [Shell](https://wiki.archlinux.org/title/Command-line_shell), [SDDM](https://wiki.archlinux.org/title/SDDM), [GRUB](https://wiki.archlinux.org/title/GRUB), etc. and is at your own risk.
 
 For NixOS support there is a separate project being maintained @ [Hydenix](https://github.com/richen604/hydenix/tree/main)
 
@@ -90,19 +92,19 @@ For NixOS support there is a separate project being maintained @ [Hydenix](https
 > The script modifies your `grub` or `systemd-boot` config to enable NVIDIA DRM.
 
 > [!TIP]
-> BigLinux / Manjaro users may want to take a snapshot with Timeshift before running the installer, especially when HyDE is being installed alongside an existing desktop environment. On older NVIDIA cards, review the legacy driver list in [`Scripts/nvidia-db/`](./Scripts/nvidia-db/) before continuing.
+> BigLinux / Manjaro users may want to take a snapshot with Timeshift before running the installer, especially when Hyprion is being installed alongside an existing desktop environment. On older NVIDIA cards, review the legacy driver list in [`Scripts/nvidia-db/`](./Scripts/nvidia-db/) before continuing.
 
 To install, execute the following commands:
 
 ```shell
 sudo pacman -S --needed git base-devel
-git clone --depth 1 https://github.com/derrickthegreat/HyDE ~/HyDE
-cd ~/HyDE/Scripts
+git clone --depth 1 https://github.com/derrickthegreat/Hyprion ~/Hyprion
+cd ~/Hyprion/Scripts
 ./install.sh
 ```
 
 > [!TIP]
-> You can also add any other apps you wish to install alongside HyDE to `Scripts/pkg_user.lst` and pass the file as a parameter to install it like so:
+> You can also add any other apps you wish to install alongside Hyprion to `Scripts/pkg_user.lst` and pass the file as a parameter to install it like so:
 >
 > ```shell
 > ./install.sh pkg_user.lst
@@ -149,7 +151,7 @@ We welcome contributions from the community! To get started:
 - Check [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow and how upstream changes are pulled in
 - Add yourself to [CONTRIBUTORS.md](CONTRIBUTORS.md) when making your first PR
 
-Whether you're helping with code, testing, or documentation, we appreciate your support in making HyDE better for everyone. Thank you!
+Whether you're helping with code, testing, or documentation, we appreciate your support in making Hyprion better for everyone. Thank you!
 
 <div align="right">
   <br>
@@ -164,15 +166,15 @@ Whether you're helping with code, testing, or documentation, we appreciate your 
 > [!NOTE]
 > If you are upgrading from an older version to the new Lua configuration, please follow the [Lua Migration Guide](https://hydeproject.pages.dev/en/help/lua/) in the HyDE wiki.
 
-To update HyDE, you will need to pull the latest changes from GitHub and restore the configs by running the following commands:
+To update Hyprion, you will need to pull the latest changes from GitHub and restore the configs by running the following commands:
 
 > [!WARNING]
 > The following commands will discard any uncommitted local changes in the repository.
 
 ```shell
-cd ~/HyDE/Scripts
-git fetch --update-shallow --depth 1 origin master
-git reset --hard origin/master
+cd ~/Hyprion/Scripts
+git fetch --update-shallow --depth 1 origin main
+git reset --hard origin/main
 ./install.sh -r
 ```
 
@@ -195,7 +197,7 @@ For more details, you can refer to [Hyde-cli - dots management wiki](https://git
 
 ---
 
-HyDEVM is a script that allows you to run HyDE in a virtual machine for testing and development.
+HyDEVM is a script that allows you to run Hyprion in a virtual machine for testing and development.
 
 ## Quick Start
 
@@ -203,7 +205,7 @@ HyDEVM is a script that allows you to run HyDE in a virtual machine for testing 
 
 ```bash
 # Download and run (will auto-detect missing packages)
-curl -L https://raw.githubusercontent.com/derrickthegreat/HyDE/main/Scripts/hydevm/hydevm.sh -o hydevm
+curl -L https://raw.githubusercontent.com/derrickthegreat/Hyprion/main/Scripts/hydevm/hydevm.sh -o hydevm
 chmod +x hydevm
 ./hydevm
 ```
@@ -211,8 +213,8 @@ chmod +x hydevm
 ### NixOS (or Nix)
 
 ```bash
-# Using flakes from HyDE repository
-nix run github:derrickthegreat/HyDE
+# Using flakes from the Hyprion repository
+nix run github:derrickthegreat/Hyprion
 
 # Or if you have the repository cloned locally
 nix run .

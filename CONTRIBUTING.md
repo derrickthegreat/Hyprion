@@ -1,6 +1,6 @@
 # Contributing
 
-This is an independently maintained fork of [HyDE-Project/HyDE](https://github.com/HyDE-Project/HyDE). It tracks Hyprland releases on its own schedule and has a single long-lived branch, `main`.
+Hyprion is an opinionated, independently maintained fork of [HyDE-Project/HyDE](https://github.com/HyDE-Project/HyDE). It tracks Hyprland releases on its own schedule and has a single long-lived branch, `main`.
 
 ## Workflow
 

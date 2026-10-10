@@ -71,7 +71,7 @@ def generate_default_config(toml_file_path):
         "# This file contains default values for all configuration options",
         "# Generated from schema",
         "",
-        "\"$schema\" = \"https://raw.githubusercontent.com/derrickthegreat/HyDE/refs/heads/main/Configs/.local/share/hyde/schema/config.toml.json\"",
+        "\"$schema\" = \"https://raw.githubusercontent.com/derrickthegreat/Hyprion/refs/heads/main/Configs/.local/share/hyde/schema/config.toml.json\"",
         "",
     ]
     

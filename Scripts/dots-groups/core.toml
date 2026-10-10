@@ -1,7 +1,7 @@
 # Use for instalation script until we refactor the whole installation stack
 [global]
     action      = "preserve"                                 #
-    git         = "https://github.com/HyDE-Project/HyDE.git"
+    git         = "https://github.com/derrickthegreat/Hyprion.git"
     owner       = "The HyDE Project"                         #
     pre_command = "echo 'starting deployment'"
     version     = "0.1.0"

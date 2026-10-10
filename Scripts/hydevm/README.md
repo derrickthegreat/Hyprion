@@ -60,7 +60,7 @@ HydeVM is a streamlined development tool that automatically sets up HyDE in a vi
 
 ```bash
 # Download and run (will auto-detect missing packages)
-curl -L https://raw.githubusercontent.com/derrickthegreat/HyDE/main/Scripts/hydevm/hydevm.sh -o hydevm
+curl -L https://raw.githubusercontent.com/derrickthegreat/Hyprion/main/Scripts/hydevm/hydevm.sh -o hydevm
 chmod +x hydevm
 ./hydevm
 ```

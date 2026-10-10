@@ -102,7 +102,7 @@ new_icon = telegram-desktop
 [skype]
 desktop_entry = "^Skype$"
 new_icon = skype
-# HyDE Mandatory section // Non overridable // please open a request in https://github.com/HyDE-Project/HyDE
+# HyDE Mandatory section // Non overridable // please open a request in https://github.com/derrickthegreat/Hyprion
 # ------------------------------------------------------------------------------
 [global]
 

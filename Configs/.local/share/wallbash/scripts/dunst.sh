@@ -72,7 +72,7 @@ WARN
 grep -v '^\s*#' "${dunstDir}/dunst.conf" | grep -v '^\s*$' | envsubst >>"${dunstDir}/dunstrc"
 
 cat <<MANDATORY >>"${dunstDir}/dunstrc"
-# HyDE Mandatory section // Non overridable // please open a request in https://github.com/HyDE-Project/HyDE
+# HyDE Mandatory section // Non overridable // please open a request in https://github.com/derrickthegreat/Hyprion
 # ------------------------------------------------------------------------------
 [global]
 

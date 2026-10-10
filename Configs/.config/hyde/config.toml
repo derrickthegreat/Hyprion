@@ -2,7 +2,7 @@
 # Environment variables should be on top
 # The full reference with every key and its default lives at
 #   $HOME/.local/share/hyde/schema/config.toml  (docs: config.md next to it)
-"$schema" = "https://raw.githubusercontent.com/derrickthegreat/HyDE/refs/heads/main/Configs/.local/share/hyde/schema/config.toml.json"
+"$schema" = "https://raw.githubusercontent.com/derrickthegreat/Hyprion/refs/heads/main/Configs/.local/share/hyde/schema/config.toml.json"
 
 # Default applications used by the Super+B / Super+C / Super+E / Super+T keybinds.
 # Values are executed as written, so a bare binary name launches that binary.

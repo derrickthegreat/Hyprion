@@ -3,7 +3,7 @@ HyDE exposes `xdg_config/hyde/config.toml` file for users to modify. This lets u
 
 Users are encouraged to use an editor that support schema validation to ensure the configuration file is valid.
 ```toml
-"$schema" = "https://raw.githubusercontent.com/derrickthegreat/HyDE/refs/heads/main/Configs/.local/share/hyde/schema/config.toml.json"
+"$schema" = "https://raw.githubusercontent.com/derrickthegreat/Hyprion/refs/heads/main/Configs/.local/share/hyde/schema/config.toml.json"
 ```
 ---
 ### [battery.notify]
