@@ -226,6 +226,46 @@ check_tars() {
         print_log -y "[note] " "hypr.theme :: [$gsLow] " -r "Not Found, " -y "📣 OPTIONAL package, continuing... "
     fi
 }
+##
+# Installs a downloaded archive where only root can write. `sudo tar` kept its
+# owners, modes and device nodes, so a crafted Sddm_*.tar.* planted a setuid
+# root binary. Unpack as the user, check, and let root copy in plain modes.
+#
+# Arguments:
+#   $1 - archive
+#   $2 - target directory
+##
+install_archive_as_root() {
+    local tarFile=$1 tgtDir=$2 stage bad link target
+    if tar -tf "$tarFile" | grep -qE '^/|(^|/)\.\.(/|$)'; then
+        print_log -r "[ERROR] " "$tarFile has absolute or '..' paths, not installing it"
+        return 1
+    fi
+    stage=$(mktemp -d) && stage=$(realpath "$stage") || return 1
+    if ! tar -xf "$tarFile" -C "$stage" --no-same-owner --no-same-permissions; then
+        print_log -r "[ERROR] " "could not unpack $tarFile without root, not installing it"
+        rm -rf "$stage"
+        return 1
+    fi
+    bad=$(find "$stage" -mindepth 1 ! -type f ! -type d ! -type l -print -quit)
+    if [ -n "$bad" ]; then
+        print_log -r "[ERROR] " "$tarFile contains a device, fifo or socket (${bad#"$stage"/}), not installing it"
+        rm -rf "$stage"
+        return 1
+    fi
+    # Links are copied as links; one that points out of the theme is dropped
+    while IFS= read -r -d '' link; do
+        target=$(readlink -- "$link")
+        [[ $target != /* && $(realpath -m -- "$link") == "$stage"/* ]] && continue
+        print_log -y "[skip] " "${link#"$stage"/} -> $target points outside the theme"
+        rm -f -- "$link"
+    done < <(find "$stage" -type l -print0)
+    chmod -R a-st,u=rwX,go=rX "$stage"
+    sudo cp -R --remove-destination -- "$stage"/. "$tgtDir"/
+    local status=$?
+    rm -rf "$stage"
+    return "$status"
+}
 check_tars Gtk --mandatory
 check_tars Icon
 check_tars Cursor
@@ -270,8 +310,8 @@ for prefix in "${!archive_map[@]}"; do
     if [ -w "$tgtDir" ]; then
         tar -xf "$tarFile" -C "$tgtDir"
     else
-        print_log -y "Not writable. Extracting as root: $tgtDir"
-        if ! sudo tar -xf "$tarFile" -C "$tgtDir" 2>/dev/null; then
+        print_log -y "Not writable. Installing as root: $tgtDir"
+        if ! install_archive_as_root "$tarFile" "$tgtDir"; then
             print_log -r "Extraction by root FAILED. Giving up..."
             print_log "The above error can be ignored if the '$tgtDir' is not writable..."
         fi
