@@ -104,6 +104,8 @@ hl.bind(
 	hl.dsp.exec_cmd(hyde.sh.volumecontrol("-o", "i")),
 	{ description = "[Hardware Controls|Audio] increase volume", locked = true, repeating = true }
 )
+-- Nothing rebinds F12, so drop the stock volume-up there instead of leaving it live
+hl.unbind("F12")
 
 -- Toggle focused window split (dwindle)
 hl.bind(MOD .. " + J", hl.dsp.layout("togglesplit"), { description = "[Layout Management|Dwindle] toggle split" })
@@ -118,15 +120,9 @@ hl.bind(
 -- ============================================================================
 -- Scratchpad (special workspace) reclaims the S cluster; the screenshot binds
 -- that the stock Lua config put there move back to the P cluster they used to
--- occupy. The stock S binds are unbound explicitly rather than shadowed --
--- hyde.binds dedup keys on the flag signature, and the stock screenshot binds
--- carry locked = true while these do not, so a duplicate would not be caught.
+-- occupy. Rebinding a combo replaces the stock bind whatever its flags, so no
+-- unbind is needed first.
 -- ============================================================================
-
-hl.unbind(MOD .. " + S")
-hl.unbind(MOD .. " + SHIFT + S")
-hl.unbind(MOD .. " + ALT + S")
-hl.unbind(MOD .. " + CONTROL + A")
 
 -- Scratchpad, as it was before the Lua migration dropped it
 hl.bind(

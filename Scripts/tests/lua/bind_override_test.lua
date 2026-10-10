@@ -172,6 +172,20 @@ check("the same device filter replaces it", table.concat(commands_on("F10"), " |
 hl.bind("SUPER + Z", hl.dsp.exec_cmd("user-z"))
 expect_only("plain bind over a mouse bind", "SUPER + Z", "user-z")
 
+-- 3. The maintainer's example moves volume to F9-F11 and frees F12.
+fresh("handle")
+dofile(root .. "/Source/examples/hyprland.lua")
+for _, key in ipairs({"F9", "F10", "F11", "F12"}) do
+	local commands = commands_on(key)
+	print(("     example %-3s -> %s"):format(key, #commands == 0 and "(unbound)" or table.concat(commands, " | ")))
+end
+expect_only("example", "F9", VOL .. "'m'")
+expect_only("example", "F10", VOL .. "'d'")
+expect_only("example", "F11", VOL .. "'i'")
+check("example: F12 is unbound", #commands_on("F12"), 0)
+expect_only("example", "SUPER + S", "workspace.toggle_special")
+expect_only("example", "SUPER + P", "hyde-shell screenshot s")
+
 if failures > 0 then
 	io.stderr:write(failures .. " failure(s)\n")
 	os.exit(1)
