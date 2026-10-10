@@ -131,8 +131,8 @@ def build_parser() -> argparse.ArgumentParser:
     remove = add_cmd("remove", "remove", aliases=["r"], help_text="Remove packages (interactive when none specified).")
     remove.add_argument("packages", nargs="*", help="Packages to remove")
 
-    add_cmd("upgrade", "upgrade", aliases=["u"], help_text="Upgrade all packages using the current manager.")
-    add_cmd("fetch", "fetch", aliases=["f"], help_text="Refresh the package database.")
+    add_cmd("upgrade", "upgrade", aliases=["u"], help_text="Refresh the package database and upgrade all packages.")
+    add_cmd("fetch", "fetch", aliases=["f"], help_text="Refresh the package database (pacman: list pending updates instead).")
 
     info = add_cmd("info", "info", aliases=["n"], help_text="Show information about a package.")
     info.add_argument("package", help="Package name to inspect")
@@ -490,6 +490,8 @@ COMMAND_HANDLERS: dict[str, Callable[[PMState, argparse.Namespace], None]] = {
 
 
 def ensure_fresh_cache(state: PMState) -> None:
+    if getattr(state.module, "META", DEFAULT_META).refresh_with_upgrade:
+        return
     marker = state.ctx.cache_dir / "last-fetch"
     today = current_date()
     if marker.exists() and marker.read_text(encoding="utf-8").strip() == today:

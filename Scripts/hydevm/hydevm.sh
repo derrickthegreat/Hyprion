@@ -188,13 +188,9 @@ function install_arch_packages() {
 
     echo "📦 Installing missing packages: ${packages[*]}"
 
-    # Update package database
-    echo "🔄 Updating package database..."
-    sudo pacman -Sy
-
-    # Install required packages
-    echo "📥 Installing packages..."
-    sudo pacman -S --needed "${packages[@]}"
+    # One transaction: a refresh followed by a separate install is a partial upgrade
+    echo "📥 Updating the system and installing packages..."
+    sudo pacman -Syu --needed "${packages[@]}"
 
     # Add user to kvm group if it exists and we installed qemu
     if [[ " ${packages[*]} " =~ " qemu-desktop " ]] && getent group kvm >/dev/null; then

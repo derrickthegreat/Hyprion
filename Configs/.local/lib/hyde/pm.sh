@@ -18,8 +18,8 @@ usage() {
     echo "Commands:"
     echo "  i,  install [pkg...]    Install packages, or pick them interactively."
     echo "  r,  remove [pkg...]     Remove packages, or pick them interactively."
-    echo "  u,  upgrade             Upgrade all installed packages."
-    echo "  f,  fetch               Update the local package database."
+    echo "  u,  upgrade             Refresh the package database and upgrade all packages."
+    echo "  f,  fetch               Refresh the package database (pacman: list pending updates)."
     echo "  n,  info <pkg>          Print package information."
     echo "  la, list all            List all packages."
     echo "  li, list installed      List installed packages."
@@ -116,8 +116,16 @@ main() {
         *) die_wrong_usage "invalid <command> argument '$COMMAND'" ;;
     esac
 }
+# pacman and the AUR helpers may refresh their databases only as part of a full
+# upgrade (-Syu): refreshed alone, the next install is a partial upgrade.
+refresh_with_upgrade() {
+    case "$PM" in
+        pacman | paru | yay) return 0 ;;
+    esac
+    return 1
+}
 install() {
-    if [ ! -f "$PM_CACHE_DIR/last-fetch" ] || [ "$(cat "$PM_CACHE_DIR/last-fetch")" != "$(current_date)" ]; then
+    if ! refresh_with_upgrade && { [ ! -f "$PM_CACHE_DIR/last-fetch" ] || [ "$(cat "$PM_CACHE_DIR/last-fetch")" != "$(current_date)" ]; }; then
         pm_fetch
     fi
     if [ $# -eq 0 ]; then
@@ -134,7 +142,7 @@ remove() {
     fi
 }
 upgrade() {
-    pm_fetch
+    refresh_with_upgrade || pm_fetch
     pm_upgrade
 }
 fetch() {
@@ -286,12 +294,12 @@ pacman_remove() {
 pacman_upgrade() {
     local extra=""
     [ "$NO_CONFIRM" = 1 ] && extra="--noconfirm"
-    sudo pacman -Su $extra
+    sudo pacman -Syu $extra
 }
+# Lists what an upgrade would bring from checkupdates' own copy of the
+# databases. `pacman -Sy` would leave the system's ahead of what is installed.
 pacman_fetch() {
-    local extra=""
-    [ "$NO_CONFIRM" = 1 ] && extra="--noconfirm"
-    sudo pacman -Sy $extra
+    checkupdates || [ $? -eq 2 ]
 }
 pacman_info() {
     if aur_helpers_contain "$1"; then
@@ -359,12 +367,10 @@ paru_remove() {
 paru_upgrade() {
     local extra=""
     [ "$NO_CONFIRM" = 1 ] && extra="--noconfirm"
-    paru -Su $extra
+    paru -Syu $extra
 }
 paru_fetch() {
-    local extra=""
-    [ "$NO_CONFIRM" = 1 ] && extra="--noconfirm"
-    paru -Sy $extra
+    pacman_fetch
 }
 paru_info() {
     paru -Si --color="$PM_COLOR" "$1"
@@ -402,12 +408,10 @@ yay_remove() {
 yay_upgrade() {
     local extra=""
     [ "$NO_CONFIRM" = 1 ] && extra="--noconfirm"
-    yay -Su $extra
+    yay -Syu $extra
 }
 yay_fetch() {
-    local extra=""
-    [ "$NO_CONFIRM" = 1 ] && extra="--noconfirm"
-    yay -Sy $extra
+    pacman_fetch
 }
 yay_info() {
     yay -Si --color="$PM_COLOR" "$1"

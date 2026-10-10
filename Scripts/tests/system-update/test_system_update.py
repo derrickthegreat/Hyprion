@@ -7,6 +7,10 @@ import contextlib
 import importlib.util
 import io
 import json
+import os
+import re
+import shutil
+import subprocess
 import sys
 import tempfile
 import time
@@ -15,6 +19,7 @@ from pathlib import Path
 from unittest import mock
 
 LIB = Path(__file__).resolve().parents[3] / "Configs/.local/lib/hyde"
+BASH = shutil.which("bash")
 sys.path.insert(0, str(LIB))
 sys.path.insert(0, str(LIB / "package_managers"))
 
@@ -229,6 +234,188 @@ class PacmanBackendTests(unittest.TestCase):
         descriptions = pacman.describe(FakeCtx(output), ["asciidoc", "dos2unix", "cdrtools"])
         self.assertEqual(descriptions["dos2unix"], "Text file format converter")
         self.assertEqual(len(descriptions), 3)
+
+
+# Never reachable from the sandbox PATH except as the stubs written below.
+GUARDED = ("pacman", "paru", "yay", "sudo", "makepkg", "git", "flatpak", "apt", "dnf", "zypper", "checkupdates")
+LISTING = "extra foo 1.0-1\nextra bar 2.0-1\n"
+
+
+class Sandbox:
+    """A fake HOME and a PATH holding only recording stubs and a few named tools."""
+
+    def __init__(self, stubs, tools=()):
+        self.tmp = tempfile.TemporaryDirectory()
+        root = Path(self.tmp.name)
+        self.bin = root / "bin"
+        self.home = root / "home"
+        self.log = root / "calls.log"
+        self.bin.mkdir()
+        self.home.mkdir()
+        # The stubs' shebang finds bash on PATH, so it is always linked in.
+        for tool in ("bash", *tools):
+            (self.bin / tool).symlink_to(shutil.which(tool))
+        for name, body in stubs.items():
+            path = self.bin / name
+            path.write_text(f'#!/usr/bin/env bash\nprintf "%s\\n" "${{0##*/}}${{*:+ $*}}" >>"$SHIM_LOG"\n{body}\n')
+            path.chmod(0o755)
+        for name in GUARDED:
+            found = shutil.which(name, path=str(self.bin))
+            assert found is None or not Path(found).is_symlink(), f"{name} would reach the real system"
+        self.env = {
+            "PATH": str(self.bin),
+            "HOME": str(self.home),
+            "XDG_CACHE_HOME": str(self.home / ".cache"),
+            "XDG_CONFIG_HOME": str(self.home / ".config"),
+            "XDG_RUNTIME_DIR": str(root),
+            "SHIM_LOG": str(self.log),
+            "LANG": "C",
+        }
+
+    def calls(self):
+        return self.log.read_text().splitlines() if self.log.exists() else []
+
+    def reset(self):
+        self.log.unlink(missing_ok=True)
+
+    def cleanup(self):
+        self.tmp.cleanup()
+
+
+def bare_refreshes(lines):
+    """Calls that refresh pacman's databases without upgrading in the same transaction."""
+    found = []
+    for line in lines:
+        words = line.split()
+        if not {"pacman", "paru", "yay"} & set(words[:2]):
+            continue
+        if any(re.fullmatch(r"-S[a-zA-Z]*", w) and "y" in w[2:] and "u" not in w[2:] for w in words):
+            found.append(line)
+    return found
+
+
+ARCH_STUBS = {
+    "pacman": f'[ "$1" = -Sl ] && printf "{LISTING}"; exit 0',
+    "paru": f'[ "$1" = -Sl ] && printf "{LISTING}"; exit 0',
+    "yay": "exit 0",
+    "sudo": "exit 0",
+    "checkupdates": 'echo "foo 1.0-1 -> 1.1-1"',
+    "flatpak": "exit 0",
+    "git": "exit 1",
+    "makepkg": "exit 1",
+    # Picks the first candidate, as a user pressing Enter would.
+    "fzf": 'first=""; while IFS= read -r line || [ -n "$line" ]; do [ -n "$first" ] || first=$line; done; printf "%s\\n" "$first"',
+}
+# What pm.sh runs besides the package managers.
+PM_SH_TOOLS = ("mkdir", "cat", "date", "basename", "grep", "sed", "awk", "cut", "xargs", "mktemp", "rm")
+
+
+class PmRefreshTests(unittest.TestCase):
+    """pm.py and pm.sh never refresh pacman's databases without upgrading in the same transaction."""
+
+    def setUp(self):
+        self.box = Sandbox(ARCH_STUBS, PM_SH_TOOLS)
+
+    def tearDown(self):
+        self.box.cleanup()
+
+    def pm(self, *args, stdin="", script="py"):
+        self.box.reset()
+        command = [sys.executable, str(LIB / "pm.py")] if script == "py" else [BASH, str(LIB / "pm.sh")]
+        result = subprocess.run([*command, *args], input=stdin, env=self.box.env,
+                                capture_output=True, text=True, timeout=60)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        calls = [line for line in self.box.calls() if not line.startswith("fzf")]
+        self.assertEqual(bare_refreshes(calls), [])
+        return calls
+
+    def test_install_uses_the_databases_as_they_are(self):
+        expected = {"pacman": "sudo pacman -S --needed foo", "paru": "paru -S --needed foo", "yay": "yay -S --needed foo"}
+        for manager, line in expected.items():
+            with self.subTest(manager=manager):
+                self.assertEqual(self.pm("--pm", manager, "install", "foo"), [line])
+                self.assertEqual(self.pm("--pm", manager, "install", "foo", script="sh"), [line])
+
+    def test_interactive_install_does_not_refresh_first(self):
+        # The `in` alias with no arguments; stdin narrows the list as a filter.
+        self.assertEqual(self.pm("--pm", "paru", "install", stdin="foo\n"),
+                         ["paru -Sl --color=never", "paru -S --needed foo"])
+        self.assertEqual(self.pm("--pm", "pacman", "install", stdin="foo\n"),
+                         ["pacman -Sl --color=never", "sudo pacman -S --needed foo"])
+
+    def test_installer_unattended_install(self):
+        # Scripts/restore_cfg.sh's ensure_hyq and uv_hook
+        self.assertEqual(self.pm("--pm", "paru", "install", "--no-confirm", "hyprquery", script="sh"),
+                         ["paru -S --needed --noconfirm hyprquery"])
+        self.assertEqual(self.pm("--pm", "pacman", "install", "--no-confirm", "uv", script="sh"),
+                         ["sudo pacman -S --needed --noconfirm uv"])
+
+    def test_upgrade_refreshes_in_the_same_transaction(self):
+        expected = {"pacman": "sudo pacman -Syu", "paru": "paru -Syu", "yay": "yay -Syu"}
+        for manager, line in expected.items():
+            with self.subTest(manager=manager):
+                self.assertEqual(self.pm("--pm", manager, "upgrade"), [line])
+                self.assertEqual(self.pm("--pm", manager, "upgrade", script="sh"), [line])
+
+    def test_fetch_reads_a_private_copy(self):
+        for manager in ("pacman", "paru", "yay"):
+            for script in ("py", "sh"):
+                with self.subTest(manager=manager, script=script):
+                    self.assertEqual(self.pm("--pm", manager, "fetch", script=script), ["checkupdates"])
+
+    def test_default_manager_installs_through_the_aur_helper(self):
+        self.assertEqual(self.pm("install", "foo"), ["paru -S --needed foo"])
+        self.assertEqual(self.pm("upgrade"), ["paru -Syu"])
+
+    def test_flatpak_keeps_its_own_refresh(self):
+        self.assertEqual(self.pm("--pm", "flatpak", "install", "foo"), ["flatpak install foo"])
+        self.assertEqual(self.pm("--pm", "flatpak", "upgrade"), ["flatpak update"])
+        self.assertEqual(self.pm("--pm", "flatpak", "fetch"), ["flatpak update --appstream"])
+        self.assertEqual(self.pm("--pm", "flatpak", "upgrade", script="sh"),
+                         ["flatpak update --appstream", "flatpak update"])
+
+
+class OtherBackendRefreshTests(unittest.TestCase):
+    def setUp(self):
+        self.box = Sandbox({name: "exit 0" for name in ("sudo", "apt", "dnf", "zypper")})
+
+    def tearDown(self):
+        self.box.cleanup()
+
+    def test_upgrade_refreshes_first(self):
+        expected = {
+            "apt": ["sudo apt update", "sudo apt upgrade"],
+            "dnf": ["sudo dnf upgrade --refresh"],
+            "zypper": ["sudo zypper refresh", "sudo zypper update"],
+        }
+        for manager, lines in expected.items():
+            with self.subTest(manager=manager):
+                self.box.reset()
+                result = subprocess.run([sys.executable, str(LIB / "pm.py"), "--pm", manager, "upgrade"],
+                                        env=self.box.env, capture_output=True, text=True, timeout=60)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(self.box.calls(), lines)
+
+
+class SystemUpdateRefreshTests(unittest.TestCase):
+    """The update window's upgrades refresh too, even when only the AUR has updates."""
+
+    def setUp(self):
+        self.box = Sandbox(ARCH_STUBS)
+
+    def tearDown(self):
+        self.box.cleanup()
+
+    def test_upgrades_refresh(self):
+        with mock.patch.dict(os.environ, self.box.env, clear=True), \
+                mock.patch.object(su, "CACHE_DIR", self.box.home / "cache"), \
+                contextlib.redirect_stdout(io.StringIO()):
+            done, failed = su.run_upgrades(["paru"], 40)
+            self.assertEqual((done, failed), (["paru"], []))
+            self.assertEqual(self.box.calls(), ["paru -Syu"])
+            self.box.reset()
+            su.run_upgrades(["pacman"], 40)
+            self.assertEqual(self.box.calls(), ["sudo pacman -Syu"])
 
 
 if __name__ == "__main__":

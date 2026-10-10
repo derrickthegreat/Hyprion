@@ -135,8 +135,9 @@ install() {
         handle_error
     }
 
+    # A refresh alone would make the installer's next install a partial upgrade
     box_me "Refreshing the mirrorlists"
-    pacman -Sy || {
+    pacman -Syu || {
         box_me "Failed to refresh the mirrorlists"
         handle_error
     }
@@ -163,7 +164,7 @@ purge() {
     write_ChaoticAUR "remove"
 
     box_me "Refreshing the mirrorlists"
-    pacman -Sy
+    pacman -Syu
 
     box_me "Chaotic-AUR has been successfully purged"
 }

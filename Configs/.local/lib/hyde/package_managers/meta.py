@@ -24,6 +24,10 @@ class PMMetadata:
     # Managers this one is a superset of (an AUR helper does everything pacman
     # does); interactive commands use it in their place
     extends: tuple[str, ...] = ()
+    # The package databases may only be refreshed together with a full upgrade
+    # (pacman and the AUR helpers): refreshed alone, the next install is a
+    # partial upgrade. Installs then never fetch first.
+    refresh_with_upgrade: bool = False
 
 
 # Default metadata for managers that don't declare one

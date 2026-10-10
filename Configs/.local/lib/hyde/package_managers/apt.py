@@ -4,7 +4,13 @@ from __future__ import annotations
 
 from typing import Sequence
 
-from ..package_managers.meta import PMMetadata
+import sys
+from pathlib import Path as _Path
+_BASE_DIR = _Path(__file__).resolve().parent
+if str(_BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(_BASE_DIR))
+
+from meta import PMMetadata
 
 PackageEntry = tuple[str, str | None, str | None, str | None]
 
@@ -33,6 +39,8 @@ def remove(ctx, packages: Sequence[str], no_confirm: bool = False) -> None:
 
 
 def upgrade(ctx, no_confirm: bool = False) -> None:
+    # apt upgrade works from the package lists as they are; refresh them first
+    fetch(ctx)
     args = ["sudo", "apt", "upgrade"]
     if no_confirm:
         args.append("-y")

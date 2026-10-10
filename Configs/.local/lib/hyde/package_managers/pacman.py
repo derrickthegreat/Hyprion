@@ -34,6 +34,7 @@ META = PMMetadata(
     is_base=True,
     conflicts=("paru", "paru-bin", "yay", "yay-bin"),
     overrides=("paru", "paru-bin", "yay", "yay-bin"),
+    refresh_with_upgrade=True,
 )
 
 
@@ -66,11 +67,13 @@ def upgrade(ctx, no_confirm: bool = False) -> None:
     ctx.run(args)
 
 
-def fetch(ctx, no_confirm: bool = False) -> None:
-    args = ["sudo", "pacman", "-Sy"]
-    if no_confirm:
-        args.append("--noconfirm")
-    ctx.run(args)
+def fetch(ctx) -> None:
+    """List what an upgrade would bring, from checkupdates' own copy of the databases.
+
+    `pacman -Sy` would leave the system's databases ahead of what is installed,
+    and the next install would be a partial upgrade. Only upgrade() refreshes them.
+    """
+    list_updates(ctx)
 
 
 def info(ctx, package: str) -> None:

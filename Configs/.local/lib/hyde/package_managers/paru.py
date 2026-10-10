@@ -11,6 +11,8 @@ if str(_BASE_DIR) not in sys.path:
     sys.path.insert(0, str(_BASE_DIR))
 
 from meta import PMMetadata, UpdateEntry, parse_update_lines
+# The repo databases are pacman's, and so is refreshing them safely
+from pacman import fetch  # noqa: F401
 
 PackageEntry = tuple[str, str | None, str | None, str | None]
 
@@ -23,6 +25,7 @@ META = PMMetadata(
     overrides=(),
     requires=("pacman",),
     extends=("pacman",),
+    refresh_with_upgrade=True,
 )
 
 # pacman.py will declare it overrides yay/paru
@@ -45,14 +48,7 @@ def remove(ctx, packages: Sequence[str], no_confirm: bool = False) -> None:
 
 
 def upgrade(ctx, no_confirm: bool = False) -> None:
-    args = ["paru", "-Su"]
-    if no_confirm:
-        args.append("--noconfirm")
-    ctx.run(args)
-
-
-def fetch(ctx, no_confirm: bool = False) -> None:
-    args = ["paru", "-Sy"]
+    args = ["paru", "-Syu"]
     if no_confirm:
         args.append("--noconfirm")
     ctx.run(args)
