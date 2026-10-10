@@ -251,12 +251,33 @@ list_script() {
     done | sort -u
 }
 
+##
+# Reads the KEY='value' lines version.sh writes, as data. Sourcing the file
+# ran backticks in a commit message. A value may span lines and holds a
+# quote as '\''; a line that does not parse is skipped.
+##
+load_version_file() {
+    local rest key value
+    local keys="CLONE_PATH|BRANCH|REMOTE|VERSION|VERSION_LAST_CHECKED|VERSION_COMMIT_MSG|COMMIT_HASH|RELEASE_NOTES"
+    local re="^(HYDE_($keys))='(([^']|'\\\\'')*)'"
+    rest=$(<"$1") || return 1
+    while [[ -n $rest ]]; do
+        if [[ $rest =~ $re ]] && [[ ${rest:${#BASH_REMATCH[0]}:1} == $'\n' || ${#rest} -eq ${#BASH_REMATCH[0]} ]]; then
+            key=${BASH_REMATCH[1]}
+            value=${BASH_REMATCH[3]//"'\\''"/"'"}
+            printf -v "$key" '%s' "$value"
+            rest=${rest:${#BASH_REMATCH[0]}}
+        fi
+        [[ $rest == *$'\n'* ]] && rest=${rest#*$'\n'} || rest=""
+    done
+}
+
 get_version() {
     if [[ ! -f "${XDG_STATE_HOME:-$HOME/.local/state}/hyde/version" ]]; then
         echo "HyDE version file not found. Please update HyDE."
         exit 1
     fi
-    source "${XDG_STATE_HOME:-$HOME/.local/state}/hyde/version"
+    load_version_file "${XDG_STATE_HOME:-$HOME/.local/state}/hyde/version"
     cat <<VERSION
 HyDE, your Development Environment
 
@@ -284,7 +305,7 @@ get_release_notes() {
         echo "HyDE version file not found. Please update HyDE."
         exit 1
     fi
-    source "${XDG_STATE_HOME:-$HOME/.local/state}/hyde/version"
+    load_version_file "${XDG_STATE_HOME:-$HOME/.local/state}/hyde/version"
     echo "HyDE Release Notes:"
     echo "$HYDE_RELEASE_NOTES"
 }

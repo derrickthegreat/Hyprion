@@ -44,15 +44,12 @@ if [[ "$1" == "--cache" ]]; then
   mkdir -p "$state_dir"
   version_file="$state_dir/version"
 
-  cat >"$version_file" <<EOL
-HYDE_CLONE_PATH='$HYDE_CLONE_PATH'
-HYDE_BRANCH='$HYDE_BRANCH'
-HYDE_REMOTE='$HYDE_REMOTE'
-HYDE_VERSION='$HYDE_VERSION'
-HYDE_VERSION_LAST_CHECKED='$HYDE_VERSION_LAST_CHECKED'
-HYDE_VERSION_COMMIT_MSG='$HYDE_VERSION_COMMIT_MSG'
-HYDE_COMMIT_HASH='$HYDE_COMMIT_HASH'
-EOL
+  # Each value is single-quoted with ' written as '\'', so a commit message
+  # with an apostrophe or backticks reads back as the same text.
+  for key in HYDE_CLONE_PATH HYDE_BRANCH HYDE_REMOTE HYDE_VERSION \
+    HYDE_VERSION_LAST_CHECKED HYDE_VERSION_COMMIT_MSG HYDE_COMMIT_HASH; do
+    printf "%s='%s'\n" "$key" "${!key//\'/\'\\\'\'}"
+  done >"$version_file"
 # HYDE_RELEASE_NOTES='$HYDE_RELEASE_NOTES'
 
   echo -e "Version cache output to $version_file\n"
