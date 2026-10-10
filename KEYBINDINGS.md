@@ -349,21 +349,19 @@ list is `hyde.command_map` in `~/.local/share/hypr/lua/hyde/dispatcher.lua`.
 
 ### Rebinding something HyDE already uses
 
-Bind the same combination again and yours replaces it — but **copy the flags
-too**. A bind counts as the same one only when its flags match, and
-`description` is not a flag. Thirty-three of HyDE's binds carry one:
+Bind the same combination again and yours replaces it. The flags don't have to
+match: an override without `locked` or `repeating`, or with a different
+`description`, still replaces HyDE's bind on that combination.
 
-| Flags                                          | Binds                                                                                    |
-| :--------------------------------------------- | :--------------------------------------------------------------------------------------- |
-| `locked`                                       | media keys, mute, keyboard layout, game mode, and every screen-capture bind              |
-| `locked` and `repeating`                       | volume up and down, brightness up and down — on both the function row and the media keys |
-| `repeating`                                    | resize active window, move active window                                                 |
-| `transparent`, and `release` on the apply step | the alt-tab switcher                                                                     |
+The exception is a bind that fires on a different event. One with `release`,
+`long_press`, `click` or `drag` set, or limited to certain keyboards with
+`device`, is **added** next to the existing bind instead of replacing it. That's
+how a key gets both a tap and a hold action, or a mouse button both a drag and
+a click.
 
-Miss one and you end up with **both** binds firing on that combination.
-
-So to move the mute key from <kbd>F10</kbd> to <kbd>F9</kbd>, carry `locked`
-across:
+Binding a new key leaves the old one alone, so moving a bind means removing
+the old combination as well. To move the mute key from <kbd>F10</kbd> to
+<kbd>F9</kbd>:
 
 ```lua
 hl.unbind("F10")

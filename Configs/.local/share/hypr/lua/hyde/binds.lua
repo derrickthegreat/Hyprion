@@ -1,21 +1,17 @@
 -- Bind dedup wrapper for Hyprland Lua keybinds.
 --
--- This module normalizes keycombo strings and tracks active binds in
--- hyde.binds._active. It deduplicates bindings only when
--- hyde.binds.dedup is enabled, and only for bindings with the same
--- normalized key combo and the same values for configured dedup fields.
--- Description-only metadata is ignored for dedup signature generation.
+-- Hyprland runs every bind registered on a key, so binding a combo twice
+-- leaves both live. With hyde.binds.dedup on, a later bind replaces the
+-- earlier one instead; that is how ~/.config/hypr/hyprland.lua overrides
+-- HyDE's binds. Active binds are tracked in hyde.binds._active.
 --
--- Default dedup fields are based on Hyprland bind flags:
+-- A bind replaces another when the normalized combo matches and so do the
+-- hyde.binds.dedup_fields. Those are only the flags that change when a bind
+-- fires: a release, long-press, click, drag or device-filtered bind adds a
+-- second action to the key. locked, repeating, description and the rest
+-- don't count, and neither does `mouse`, so a plain bind on SUPER + Z
+-- replaces the stock hold-to-drag.
 --   https://wiki.hypr.land/Configuring/Basics/Binds/#bind-flags
---
--- Default fields:
---   locked, release, click, drag, long_press, repeating,
---   non_consuming, auto_consuming, transparent, ignore_mods,
---   separate, bypass, submap_universal, devices
---
--- TODO: check the Hyprland bind flags documentation periodically and
--- update the dedup field list when new relevant bind flags are added.
 
 -- type(x) == "function" misses the common binding pattern of a table made
 -- callable via a __call metamethod, which is what hl.dsp.exec_cmd turns out
@@ -148,6 +144,21 @@ local function find_options(...)
     return nil
 end
 
+-- The device filter is a table; flatten it in sorted order so the same
+-- filter written twice gives the same signature.
+local function flag_value(value)
+    if type(value) ~= "table" then
+        return tostring(value)
+    end
+
+    local parts = {}
+    for key, item in pairs(value) do
+        parts[#parts + 1] = tostring(key) .. ":" .. flag_value(item)
+    end
+    table.sort(parts)
+    return "{" .. table.concat(parts, ",") .. "}"
+end
+
 local function serialize_flags(opts)
     if type(opts) ~= "table" then
         return ""
@@ -161,8 +172,9 @@ local function serialize_flags(opts)
     local parts = {}
     for _, field in ipairs(fields) do
         local value = opts[field]
-        if value ~= nil then
-            parts[#parts + 1] = field .. "=" .. tostring(value)
+        -- `release = false` is the same bind as leaving release out.
+        if value ~= nil and value ~= false then
+            parts[#parts + 1] = field .. "=" .. flag_value(value)
         end
     end
 
@@ -177,32 +189,31 @@ hyde = hyde or {}
 hyde.binds = hyde.binds or {}
 
 hyde.binds.dedup = hyde.binds.dedup == nil and false or hyde.binds.dedup
-hyde.binds.dedup_fields =
-    hyde.binds.dedup_fields or
-    {
-        "locked",
-        "release",
-        "click",
-        "drag",
-        "long_press",
-        "repeating",
-        "non_consuming",
-        "auto_consuming",
-        "transparent",
-        "ignore_mods",
-        "separate",
-        "bypass",
-        "submap_universal",
-        "devices"
-    }
+hyde.binds.dedup_fields = hyde.binds.dedup_fields or {"release", "long_press", "click", "drag", "device"}
 
 hyde.binds.normalize = normalize
 hyde.binds.canonicalize = canonicalize
 
--- Maps a canonical combo to the exact string the live bind was registered
--- with. Unbinding matches that string, not the resolved key and modifiers, so
--- the original spelling has to be kept around to remove a bind again.
+-- Maps a dedup id to the live bind: the handle hl.bind returned and the
+-- exact string it was registered with, which hl.unbind needs to match.
 hyde.binds._active = hyde.binds._active or {}
+
+-- Removing through the handle drops just this bind, after which Hyprland prints
+-- it as "HL.Keybind(expired)". Otherwise fall back to hl.unbind(combo), which
+-- also drops any other bind on the combo, such as a release bind.
+local function remove_bind(registered)
+    local handle = registered.handle
+    if handle ~= nil then
+        pcall(
+            function()
+                handle:remove()
+            end
+        )
+    end
+    if not tostring(handle):find("(expired)", 1, true) then
+        hl.unbind(registered.combo)
+    end
+end
 
 -- Resolves __lua binds back to a launchable command for the keybind-hint
 -- menu (#1996). Hyprland exposes every hl.bind() action over hyprctl as an
@@ -245,12 +256,11 @@ hl.bind = function(keycombo, action, ...)
     if normalized ~= "" and hyde.binds.dedup then
         local registered = hyde.binds._active[dedup_id]
         if registered then
-            hl.unbind(registered)
+            remove_bind(registered)
         end
     end
 
     if normalized ~= "" then
-        hyde.binds._active[dedup_id] = normalized
         keycombo = normalized
     end
 
@@ -263,7 +273,11 @@ hl.bind = function(keycombo, action, ...)
         end
     end
 
-    return orig_add(keycombo, action, ...)
+    local handle = orig_add(keycombo, action, ...)
+    if normalized ~= "" then
+        hyde.binds._active[dedup_id] = {combo = normalized, handle = handle}
+    end
+    return handle
 end
 
 -- Written once per full config (re)load, not per-bind: hl.bind() runs on the

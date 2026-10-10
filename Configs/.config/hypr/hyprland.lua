@@ -16,10 +16,9 @@ end
 
 -- Your Hyprland configuration. HyDE never overwrites this file.
 --
--- It loads after HyDE's own binds, so settings here take precedence. Replacing
--- a bind needs more than that: see below. HyDE's defaults live in
--- ~/.local/share/hypr/lua/ and are overwritten on every update, so edits there
--- do not survive.
+-- It loads after HyDE's own binds, so settings here take precedence. HyDE's
+-- defaults live in ~/.local/share/hypr/lua/ and are overwritten on every
+-- update, so edits there do not survive.
 --
 -- Adding a keybind:
 --
@@ -27,16 +26,21 @@ end
 --         description = "[Utilities] game launcher",
 --     })
 --
--- Replacing one of HyDE's: bind the same combination again and yours takes
--- over, but copy its flags across as well. A bind counts as the same one only
--- when its flags match, and `description` is not a flag — miss one and both
--- binds stay live on that combination. Copy the whole options table from
--- ~/.local/share/hypr/lua/key_binds.lua and change only what you need:
+-- Replacing one of HyDE's: bind the same combination again and yours replaces
+-- it, whatever flags either carries. Only a bind that fires on a different
+-- event (release, long_press, click, drag, or a device filter) is added next to
+-- the old one instead. To make F10 lower the volume instead of muting:
 --
---     hl.bind("F9", hl.dsp.exec_cmd(hyde.sh.volumecontrol("-o", "m")), {
+--     hl.bind("F10", hl.dsp.exec_cmd(hyde.sh.volumecontrol("-o", "d")), {
 --         locked = true,
---         description = "[Hardware Controls|Audio] un/mute output",
+--         repeating = true,
+--         description = "[Hardware Controls|Audio] decrease volume",
 --     })
+--
+-- Removing one of HyDE's without a replacement takes hl.unbind, with the
+-- combination spelled as in ~/.local/share/hypr/lua/key_binds.lua:
+--
+--     hl.unbind("F12")
 --
 -- Press SUPER + / to see what is actually loaded, your own binds included.
 -- The full reference is KEYBINDINGS.md in the HyDE repository.
