@@ -26,8 +26,10 @@ if [ "$flg_ThemeInstall" -eq 1 ]; then
         themeNameQ+=("${themeName//\"/}")
         themeRepoQ+=("${themeRepo//\"/}")
         themePath="${confDir}/hyde/themes/${themeName}"
-        [ -d "${themePath}" ] || mkdir -p "${themePath}"
-        [ -f "${themePath}/.sort" ] || echo "${#themeNameQ[@]}" >"${themePath}/.sort"
+        if [ "${flg_DryRun}" -ne 1 ]; then
+            [ -d "${themePath}" ] || mkdir -p "${themePath}"
+            [ -f "${themePath}/.sort" ] || echo "${#themeNameQ[@]}" >"${themePath}/.sort"
+        fi
 
         if [ "${THEME_IMPORT_ASYNC}" -ne 1 ] && [ "${flg_DryRun}" -ne 1 ]; then
             if ! "${cloneDir}/Configs/.local/lib/hyde/theme.patch.sh" "${themeName}" "${themeRepo}" "--skipcaching" "false"; then
@@ -41,7 +43,7 @@ if [ "$flg_ThemeInstall" -eq 1 ]; then
 
     done <"$THEME_IMPORT_FILE"
 
-    if [ "${THEME_IMPORT_ASYNC}" -eq 1 ]; then
+    if [ "${THEME_IMPORT_ASYNC}" -eq 1 ] && [ "${flg_DryRun}" -ne 1 ]; then
         set +e
         parallel --bar --link "\"${cloneDir}/Configs/.local/lib/hyde/theme.patch.sh\"" "{1}" "{2}" "{3}" "{4}" ::: "${themeNameQ[@]}" ::: "${themeRepoQ[@]}" ::: "--skipcaching" ::: "false"
         set -e

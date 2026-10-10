@@ -43,7 +43,7 @@ if pkg_installed sddm; then
     fi
 
     if [ ! -f "/usr/share/sddm/faces/${USER}.face.icon" ] && [ -f "${cloneDir}/Source/misc/${USER}.face.icon" ]; then
-        sudo cp "${cloneDir}/Source/misc/${USER}.face.icon" /usr/share/sddm/faces/
+        [ ${flg_DryRun} -eq 1 ] || sudo cp "${cloneDir}/Source/misc/${USER}.face.icon" /usr/share/sddm/faces/
         print_log -g "[DISPLAYMANAGER] " -b " :: " "avatar set for ${USER}..."
     fi
 
@@ -54,8 +54,12 @@ fi
 # dolphin
 if pkg_installed dolphin && pkg_installed xdg-utils; then
     print_log -c "[FILEMANAGER] " -b "detected :: " "dolphin"
-    xdg-mime default org.kde.dolphin.desktop inode/directory
-    print_log -g "[FILEMANAGER] " -b " :: " "setting $(xdg-mime query default "inode/directory") as default file explorer..."
+    if [ ${flg_DryRun} -eq 1 ]; then
+        print_log -y "[FILEMANAGER] " -b "dry-run :: " "Would set org.kde.dolphin.desktop as default file explorer"
+    else
+        xdg-mime default org.kde.dolphin.desktop inode/directory
+        print_log -g "[FILEMANAGER] " -b " :: " "setting $(xdg-mime query default "inode/directory") as default file explorer..."
+    fi
 
 else
     print_log -y "[FILEMANAGER]" -b " :: " "dolphin is not installed..."

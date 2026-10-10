@@ -351,13 +351,21 @@ run_pending_migrations() {
     [ -d "${migrationDir}" ] || return 0
     find "${migrationDir}" -maxdepth 1 -type f | grep -q . || return 0
 
-    mkdir -p "$(dirname "${stateFile}")"
-    [ -f "${stateFile}" ] || : >"${stateFile}"
+    if [ "${flg_DryRun:-0}" -ne 1 ]; then
+        mkdir -p "$(dirname "${stateFile}")"
+        [ -f "${stateFile}" ] || : >"${stateFile}"
+    fi
 
     while read -r migrationFile; do
         [ -n "${migrationFile}" ] || continue
-        grep -qxF "${migrationFile}" "${stateFile}" && continue
+        [ -f "${stateFile}" ] && grep -qxF "${migrationFile}" "${stateFile}" && continue
         pending=$((pending + 1))
+        # A test run names what the real one would apply and records nothing,
+        # so that run still finds them pending.
+        if [ "${flg_DryRun:-0}" -eq 1 ]; then
+            print_log -y "[MIGRATION] " -b "dry-run :: " "Would run ${migrationFile}"
+            continue
+        fi
         echo "Found migration file: ${migrationFile}"
         # stdin is closed for the migration: inheriting the loop's stdin let one
         # that reads input swallow the names of every migration after it.

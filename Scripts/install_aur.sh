@@ -24,6 +24,11 @@ fi
 
 aurhlpr="${1:-yay-bin}"
 
+if [ "${flg_DryRun:-0}" -eq 1 ]; then
+    print_log -sec "AUR" -stat "dry-run" "Would build and install ${aurhlpr} from https://aur.archlinux.org/${aurhlpr}.git in $HOME/Clone"
+    exit 0
+fi
+
 if [ -d "$HOME/Clone" ]; then
     print_log -sec "AUR" -stat "exist" "$HOME/Clone directory..."
     rm -rf "$HOME/Clone/${aurhlpr}"

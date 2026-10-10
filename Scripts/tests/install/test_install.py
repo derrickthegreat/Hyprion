@@ -88,6 +88,43 @@ class SandboxTestCase(unittest.TestCase):
         self.addCleanup(self.box.cleanup)
 
 
+class MigrationDryRunTests(SandboxTestCase):
+    def setUp(self):
+        super().setUp()
+        self.migrations = self.box.root / "migrations"
+        self.migrations.mkdir()
+        self.ran = self.box.root / "ran"
+        for version in ("v1.sh", "v2.sh"):
+            (self.migrations / version).write_text(f'touch "{self.ran}-{version}"\n')
+        self.state = self.box.home / ".local/state/hyde/migration/applied"
+
+    def migrate(self, dry_run):
+        result = self.box.source(f'run_pending_migrations "{self.migrations}" "{self.state}"',
+                                 flg_DryRun=str(dry_run))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return result.stdout
+
+    def test_test_run_runs_and_records_nothing(self):
+        out = self.migrate(dry_run=1)
+        self.assertIn("Would run v1.sh", out)
+        self.assertIn("Would run v2.sh", out)
+        self.assertEqual(list(self.box.root.glob("ran-*")), [])
+        self.assertFalse(self.state.parent.exists())
+
+    def test_test_run_skips_recorded_migrations(self):
+        self.state.parent.mkdir(parents=True)
+        self.state.write_text("v1.sh\n")
+        out = self.migrate(dry_run=1)
+        self.assertNotIn("v1.sh", out)
+        self.assertIn("Would run v2.sh", out)
+        self.assertEqual(self.state.read_text(), "v1.sh\n")
+
+    def test_real_run_applies_and_records(self):
+        self.migrate(dry_run=0)
+        self.assertTrue(Path(f"{self.ran}-v1.sh").exists())
+        self.assertEqual(self.state.read_text(), "v1.sh\nv2.sh\n")
+
+
 GPUS = {
     "pascal": "01:00.0 VGA compatible controller: NVIDIA Corporation GP104 [GeForce GTX 1080] (rev a1)",
     "turing": "01:00.0 VGA compatible controller: NVIDIA Corporation TU104 [GeForce RTX 2080] (rev a1)",
@@ -215,6 +252,35 @@ class DeezCheckTests(SandboxTestCase):
         install = (SCRIPTS / "install.sh").read_text()
         self.assertNotIn('"${deez_exe}" deps --install', install)
         self.assertEqual(install.count("deez_deps_install --config"), 4)
+
+
+class DryRunTests(SandboxTestCase):
+    """install.sh -t exports flg_DryRun=1 to every script it runs."""
+
+    def script(self, name, *args, stdin="", **env):
+        return self.box.run([BASH, str(SCRIPTS / name), *args], stdin=stdin, flg_DryRun="1", **env)
+
+    def test_aur_helper_is_not_built(self):
+        result = self.script("install_aur.sh", "yay")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("Would build and install yay", result.stdout)
+        self.assertEqual(self.box.calls("git", "makepkg", "sudo"), [])
+        self.assertFalse((self.box.home / "Clone").exists())
+
+    def test_post_install_changes_nothing(self):
+        # Covers restore_shl.sh too, which install_pst.sh runs.
+        (self.box.home / ".oh-my-zsh").mkdir()
+        (self.box.home / ".oh-my-zsh/oh-my-zsh.sh").touch()
+        result = self.script("install_pst.sh", INSTALLED="dolphin xdg-utils zsh", myShell="zsh")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("Would set org.kde.dolphin.desktop", result.stdout)
+        self.assertEqual(self.box.calls("xdg-mime", "zsh", "curl", "chsh", "git", "sudo"), [])
+
+    def test_theme_import_creates_nothing(self):
+        result = self.script("restore_thm.sh")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertFalse((self.box.home / ".config/hyde").exists())
+        self.assertEqual(self.box.calls("git", "curl"), [])
 
 
 if __name__ == "__main__":

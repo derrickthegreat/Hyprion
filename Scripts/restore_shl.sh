@@ -36,7 +36,7 @@ if [ "${myShell}" = "zsh" ] && pkg_installed zsh; then
                 fi
             else
                 print_log -sec "SHELL" -stat "updating" "oh-my-zsh"
-                zsh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/upgrade.sh)"
+                [ ${flg_DryRun} -eq 1 ] || zsh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/upgrade.sh)"
             fi
         fi
     fi
