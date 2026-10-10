@@ -123,6 +123,15 @@ aur_available() {
     fi
 }
 
+# The utils package a driver from nvidia-db/ runs with. The legacy branches ship
+# their own, which conflicts with the repo's nvidia-utils.
+nvidia_utils() {
+    case "${1}" in
+    nvidia-open-dkms) echo "nvidia-utils" ;;
+    *) echo "${1%-dkms}-utils" ;;
+    esac
+}
+
 nvidia_detect() {
     readarray -t dGPU < <(lspci -k | grep -E "(VGA|3D)" | awk -F ': ' '{print $NF}')
     if [ "${1}" == "--verbose" ]; then
@@ -132,9 +141,24 @@ nvidia_detect() {
         return 0
     fi
     if [ "${1}" == "--drivers" ]; then
-        while read -r -d ' ' nvcode; do
-            awk -F '|' -v nvc="${nvcode}" 'substr(nvc,1,length($3)) == $3 {split(FILENAME,driver,"/"); print driver[length(driver)],"\nnvidia-utils"}' "${scrDir}"/nvidia-db/nvidia*dkms
-        done <<<"${dGPU[@]}"
+        # "--drivers pacman" or "--drivers aur" keeps the packages from that
+        # source: only nvidia-open-dkms is in the official repos, the legacy
+        # branches are in the AUR (and Chaotic-AUR) alone.
+        local driver origin
+        while read -r driver; do
+            origin="aur"
+            [ "${driver}" != "nvidia-open-dkms" ] || origin="pacman"
+            [ -z "${2:-}" ] || [ "${2}" = "${origin}" ] || continue
+            printf '%s\n%s\n' "${driver}" "$(nvidia_utils "${driver}")"
+        done < <(awk -F '|' -v gpus="${dGPU[*]}" '
+            BEGIN { n = split(gpus, word, " ") }
+            {
+                for (i = 1; i <= n; i++) {
+                    if (substr(word[i], 1, length($3)) != $3) continue
+                    k = split(FILENAME, path, "/")
+                    if (!seen[path[k]]++) print path[k]
+                }
+            }' "${scrDir}"/nvidia-db/nvidia*dkms)
         return 0
     fi
     if grep -iq nvidia <<<"${dGPU[@]}"; then
@@ -142,6 +166,35 @@ nvidia_detect() {
     else
         return 1
     fi
+}
+
+# Prints the legacy NVIDIA drivers as a TOML dependency block for the AUR
+# helpers. deez installs those through yay or paru and passes over them without
+# a word when neither is installed, so that case is caught here instead.
+nvidia_aur_deps() {
+    local pkgs=() missing=() pkg manager
+    while read -r pkg; do
+        [ -z "${pkg}" ] || pkgs+=("${pkg}")
+    done < <(nvidia_detect --drivers aur)
+    [ "${#pkgs[@]}" -gt 0 ] || return 0
+
+    if ! command -v yay &>/dev/null && ! command -v paru &>/dev/null; then
+        for pkg in "${pkgs[@]}"; do
+            pkg_installed "${pkg}" || missing+=("${pkg}")
+        done
+        if [ "${#missing[@]}" -gt 0 ] && [ "${flg_DryRun:-0}" -ne 1 ]; then
+            print_log -r "[NVIDIA] " -crit "ERROR" "${missing[*]} come from the AUR, which needs yay or paru, and neither is installed. Install one, or run the installer with -n to leave the NVIDIA driver alone." >&2
+            return 1
+        fi
+        return 0
+    fi
+
+    printf '\n[[global.dependency]]\n'
+    for manager in yay paru; do
+        printf '%s = [' "${manager}"
+        printf ' "%s",' "${pkgs[@]}"
+        printf ' ]\n'
+    done
 }
 
 # Installs the dependencies of the deez config given in "$@" and checks they

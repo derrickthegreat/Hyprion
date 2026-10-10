@@ -88,6 +88,88 @@ class SandboxTestCase(unittest.TestCase):
         self.addCleanup(self.box.cleanup)
 
 
+GPUS = {
+    "pascal": "01:00.0 VGA compatible controller: NVIDIA Corporation GP104 [GeForce GTX 1080] (rev a1)",
+    "turing": "01:00.0 VGA compatible controller: NVIDIA Corporation TU104 [GeForce RTX 2080] (rev a1)",
+    "hybrid": "00:02.0 VGA compatible controller: Intel Corporation Alder Lake-P GT2 [Iris Xe Graphics] (rev 0c)\n"
+              "01:00.0 3D controller: NVIDIA Corporation GA107M [GeForce RTX 3050 Mobile] (rev a1)",
+}
+
+
+class NvidiaDriverTests(SandboxTestCase):
+    def detect(self, lspci, *args, **env):
+        result = self.box.source(f"nvidia_detect --drivers {' '.join(args)}", LSPCI=lspci, **env)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return result.stdout.split()
+
+    def test_each_driver_gets_its_own_utils(self):
+        chips = {
+            "G92": "nvidia-340xx", "GF108": "nvidia-390xx", "GK104": "nvidia-470xx",
+            "GM206": "nvidia-580xx", "GP104": "nvidia-580xx",
+        }
+        for chip, branch in chips.items():
+            with self.subTest(chip=chip):
+                lspci = f"01:00.0 VGA compatible controller: NVIDIA Corporation {chip} [GeForce] (rev a1)"
+                self.assertEqual(self.detect(lspci, "aur"), [f"{branch}-dkms", f"{branch}-utils"])
+                self.assertEqual(self.detect(lspci, "pacman"), [])
+
+    def test_current_gpus_stay_on_pacman(self):
+        for gpu in ("turing", "hybrid"):
+            with self.subTest(gpu=gpu):
+                self.assertEqual(self.detect(GPUS[gpu], "pacman"), ["nvidia-open-dkms", "nvidia-utils"])
+                self.assertEqual(self.detect(GPUS[gpu], "aur"), [])
+
+    def test_unfiltered_lists_everything_once(self):
+        both = f"{GPUS['pascal']}\n{GPUS['pascal'].replace('01:00.0', '02:00.0')}"
+        self.assertEqual(self.detect(both), ["nvidia-580xx-dkms", "nvidia-580xx-utils"])
+
+    def test_chip_code_as_the_last_word(self):
+        lspci = "01:00.0 3D controller: NVIDIA Corporation GP108"
+        self.assertEqual(self.detect(lspci, "aur"), ["nvidia-580xx-dkms", "nvidia-580xx-utils"])
+
+    def aur_deps(self, lspci, **env):
+        return self.box.source("nvidia_aur_deps", LSPCI=lspci, **env)
+
+    def test_legacy_block_for_the_aur_helpers(self):
+        self.box.stub("yay", "exit 0")
+        result = self.aur_deps(GPUS["pascal"])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        # Appended after the pacman list in install.sh's transient TOML
+        config = tomllib.loads(f'[[global.dependency]]\npacman = [ "linux-headers", ]\n{result.stdout}')
+        blocks = config["global"]["dependency"]
+        self.assertEqual(blocks[0], {"pacman": ["linux-headers"]})
+        self.assertEqual(blocks[1], {
+            "yay": ["nvidia-580xx-dkms", "nvidia-580xx-utils"],
+            "paru": ["nvidia-580xx-dkms", "nvidia-580xx-utils"],
+        })
+
+    def test_no_block_for_current_gpus(self):
+        self.box.stub("yay", "exit 0")
+        result = self.aur_deps(GPUS["turing"])
+        self.assertEqual((result.returncode, result.stdout), (0, ""))
+
+    def test_missing_legacy_driver_without_a_helper_stops(self):
+        result = self.aur_deps(GPUS["pascal"])
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "")
+        self.assertIn("nvidia-580xx-dkms nvidia-580xx-utils come from the AUR", result.stderr)
+        self.assertIn("-n", result.stderr)
+
+    def test_installed_legacy_driver_without_a_helper_is_fine(self):
+        result = self.aur_deps(GPUS["pascal"], INSTALLED="nvidia-580xx-dkms nvidia-580xx-utils")
+        self.assertEqual((result.returncode, result.stdout), (0, ""))
+
+    def test_test_run_without_a_helper_carries_on(self):
+        result = self.aur_deps(GPUS["pascal"], flg_DryRun="1")
+        self.assertEqual((result.returncode, result.stdout), (0, ""))
+
+    def test_install_sh_routes_the_drivers(self):
+        install = (SCRIPTS / "install.sh").read_text()
+        self.assertEqual(install.count("nvidia_detect --drivers pacman"), 2)
+        self.assertEqual(install.count("nvidia_aur_deps >>"), 2)
+        self.assertNotIn("nvidia_detect --drivers |", install)
+
+
 # deez's own output for `deps --check`, captured without a terminal
 CHECK_OK = "[ok] Deps: all satisfied.\n"
 CHECK_MISSING = "[warn] pacman: hyprland missing\n[err] Deps: missing\n[err]   pacman: hyprland, uwsm\n"

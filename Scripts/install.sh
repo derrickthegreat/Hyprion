@@ -298,7 +298,7 @@ EOF
 			cat /usr/lib/modules/*/pkgbase 2>/dev/null | while read -r kernel; do
 				echo "\"${kernel}-headers\","
 			done >> "${core_toml}"
-			nvidia_detect --drivers | while read -r pkg; do
+			nvidia_detect --drivers pacman | while read -r pkg; do
 				[ -n "${pkg}" ] && echo "\"${pkg}\","
 			done >> "${core_toml}"
 		else
@@ -307,6 +307,11 @@ EOF
 	fi
 	nvidia_detect --verbose
 	echo "]" >> "${core_toml}"
+	# The legacy drivers are AUR-only. Listed under pacman, they failed the
+	# whole core transaction.
+	if nvidia_detect && [ "${flg_Nvidia}" -eq 1 ]; then
+		nvidia_aur_deps >> "${core_toml}" || exit 1
+	fi
 
 	#--------------------------------#
 	# install core deps (+ nvidia)   #
@@ -359,11 +364,14 @@ EOF
 		cat /usr/lib/modules/*/pkgbase 2>/dev/null | while read -r kernel; do
 			echo "\"${kernel}-headers\","
 		done >> "${core_toml}"
-		nvidia_detect --drivers | while read -r pkg; do
+		nvidia_detect --drivers pacman | while read -r pkg; do
 			[ -n "${pkg}" ] && echo "\"${pkg}\","
 		done >> "${core_toml}"
 	fi
 	echo "]" >> "${core_toml}"
+	if nvidia_detect && [ "${flg_Nvidia}" -eq 1 ]; then
+		nvidia_aur_deps >> "${core_toml}" || exit 1
+	fi
 
 	#------------------------------------------#
 	# rebuild transient TOML: extra deps+shell  #
