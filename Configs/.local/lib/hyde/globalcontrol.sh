@@ -154,8 +154,16 @@ get_hashmap() {
     unset filetypes
     unset no_notify
     unset no_wallpapers
-    list_extensions() {
-        supported_files=(
+    # The find command is built as an array: it used to be a string run
+    # through eval, so a wallpaper path holding $(...), backticks or a quote
+    # (theme repos and WALLPAPER_CUSTOM_PATHS name them) ran or broke it.
+    find_wallpapers() {
+        local wallSource="$1"
+        if [ -z "$wallSource" ]; then
+            print_log -err "ERROR: wallSource is empty"
+            return 1
+        fi
+        local supported_files=(
             "gif"
             "jpg"
             "jpeg"
@@ -164,24 +172,14 @@ get_hashmap() {
         if [ -n "$WALLPAPER_OVERRIDE_FILETYPES" ]; then
             supported_files=("${WALLPAPER_OVERRIDE_FILETYPES[@]}")
         fi
-        printf -- '-iname "*.%s" -o ' "${supported_files[@]}" | sed 's/ -o $//'
-    }
-    list_skipped_path() {
-        local skip_path=(
-            "*/logo/*")
-        printf -- '! -path "%s" ' "${skip_path[@]}" | sed 's/ $//'
-    }
-    find_wallpapers() {
-        local wallSource="$1"
-        if [ -z "$wallSource" ]; then
-            print_log -err "ERROR: wallSource is empty"
-            return 1
-        fi
-        local find_command
-        find_command="find -H \"$wallSource\" -type f \\( $(list_extensions) \\) $(list_skipped_path) -exec \"$hashMech\" {} +"
-        [ "$LOG_LEVEL" == "debug" ] && print_log -g "DEBUG:" -b "Running command:" "$find_command"
+        local ext name_args=()
+        for ext in "${supported_files[@]}"; do
+            name_args+=(-o -iname "*.$ext")
+        done
+        local find_command=(find -H "$wallSource" -type f \( "${name_args[@]:1}" \) ! -path "*/logo/*" -exec "$hashMech" {} +)
+        [ "$LOG_LEVEL" == "debug" ] && print_log -g "DEBUG:" -b "Running command:" "${find_command[*]}"
         tmpfile=$(mktemp)
-        eval "$find_command" 2>"$tmpfile" | sort -k2
+        "${find_command[@]}" 2>"$tmpfile" | sort -k2
         error_output=$(<"$tmpfile") && rm -f "$tmpfile"
         [ -n "$error_output" ] && print_log -err "ERROR:" -b "found an error: " -r "$error_output" -y " skipping..."
     }
