@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Docs: link to Lua migration guide in `README.md` and `MIGRATION-LUA.md`
 - Waybar: add VSCodium and Chromium icon rules to window module
 - Theme import: the "More Themes" fzf picker (`hydectl theme import`) marks themes already present in `~/.config/hyde/themes` with a "✓ installed" suffix, so browsing the gallery no longer requires cross-checking what's already on disk
+- Waybar: layout `hyprdots/18` combines layout 13's split pills with layout 17's modules. Workspaces, taskbar and the mpris media player sit on the left, 17's center pill in the middle, and five pills on the right: GPU/CPU/sensors, network and audio, tray, wallpaper and theme pickers, and clipboard/notifications/menu/power. It drops 17's `keyboard-state` and `custom/bluetooth`, which waybar disabled (no `input` group access; no `custom/bluetooth` definition), and uses the `bluetooth` module, which shows once a device is connected. Notifications show for dunst or swaync, whichever is running
 
 ### Changed
 
