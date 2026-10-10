@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Changed
 
 - Branding: the fork is now called Hyprion and lives at `github.com/derrickthegreat/Hyprion`. The README, installer banner, Waybar GitHub button, config schema URL and update instructions use the new name and repo. `hyde-shell`, `~/.config/hyde` and the `HYDE_*` variables keep their names
+- Docs: the README, KEYBINDINGS and their translations show the installer's ASCII banner instead of `hyde_banner.png`, which still read HYDE. The README no longer carries upstream's all-contributors badge and table, and `.all-contributorsrc` is gone; upstream's contributors are still credited in `CONTRIBUTORS.md`
 - Scripts: refactor hyde-shell open to use config.toml , mime . --fallback resolution handling.
 
 

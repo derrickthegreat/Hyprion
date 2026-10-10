@@ -6,7 +6,14 @@
 
 ###### _<div align="right"><a id=-design-by-t2></a><sub>// 由 t2 设计</sub></div>_
 
-![hyde_banner](Source/assets/hyde_banner.png)
+```text
+     .
+    / \         _       _  _               _
+   /^  \      _| |_    | || |_  _ _ __ _ _(_)___ _ _
+  /  _  \    |_   _|   | __ | || | '_ \ '_| / _ \ ' \
+ /  | | ~\     |_|     |_||_|\_, | .__/_| |_\___/_||_|
+/.-'   '-.\                  |__/|_|
+```
 
 <!--
 Multi-language KEYBINDINGS support

@@ -7,7 +7,14 @@
 
 ###### _<div align="right"><a id=-design-by-t2></a><sub>// diseño por t2</sub></div>_
 
-![hyde_banner](../assets/hyde_banner.png)
+```text
+     .
+    / \         _       _  _               _
+   /^  \      _| |_    | || |_  _ _ __ _ _(_)___ _ _
+  /  _  \    |_   _|   | __ | || | '_ \ '_| / _ \ ' \
+ /  | | ~\     |_|     |_||_|\_, | .__/_| |_\___/_||_|
+/.-'   '-.\                  |__/|_|
+```
 
 <!--
 Soporte para README multilingüe.

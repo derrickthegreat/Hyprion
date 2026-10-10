@@ -8,7 +8,14 @@ An opinionated HyDE fork for Hyprland.
 
 ###### _<div align="right"><a id=-design-by-t2></a><sub>// design by t2</sub></div>_
 
-![hyde_banner](Source/assets/hyde_banner.png)
+```text
+     .
+    / \         _       _  _               _
+   /^  \      _| |_    | || |_  _ _ __ _ _(_)___ _ _
+  /  _  \    |_   _|   | __ | || | '_ \ '_| / _ \ ' \
+ /  | | ~\     |_|     |_||_|\_, | .__/_| |_\___/_||_|
+/.-'   '-.\                  |__/|_|
+```
 
 > [!NOTE]
 > Hyprion is an independently maintained fork of [HyDE-Project/HyDE](https://github.com/HyDE-Project/HyDE).
@@ -20,9 +27,6 @@ An opinionated HyDE fork for Hyprland.
 <!--
 Multi-language README support
 -->
-<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors-)
-<!-- ALL-CONTRIBUTORS-BADGE:END -->
 [![es](https://img.shields.io/badge/lang-es-yellow.svg)](Source/docs/README.es.md)
 [![de](https://img.shields.io/badge/lang-de-black.svg)](Source/docs/README.de.md)
 [![nl](https://img.shields.io/badge/lang-nl-green.svg)](Source/docs/README.nl.md)
@@ -330,27 +334,3 @@ For more information, visit [HyDE-Project/hyde-themes](https://github.com/HyDE-P
 <div align="right">
   <sub>Last edited on: 27/02/2025<span id="last-edited"></span></sub>
 </div>
-
-
-## Contributors ✨
-
-Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
-
-<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
-<!-- prettier-ignore-start -->
-<!-- markdownlint-disable -->
-<table>
-  <tbody>
-    <tr>
-      <td align="center" valign="top" width="14.28%"><a href="https://rubiin.is-a.dev"><img src="https://avatars.githubusercontent.com/u/8222059?v=4?s=100" width="100px;" alt="Rubin Bhandari"/><br /><sub><b>Rubin Bhandari</b></sub></a><br /><a href="https://github.com/HyDE-Project/HyDE/commits?author=rubiin" title="Code">💻</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/kRHYME7"><img src="https://avatars.githubusercontent.com/u/53417443?v=4?s=100" width="100px;" alt="Khing"/><br /><sub><b>Khing</b></sub></a><br /><a href="https://github.com/HyDE-Project/HyDE/commits?author=kRHYME7" title="Code">💻</a> <a href="https://github.com/HyDE-Project/HyDE/commits?author=kRHYME7" title="Documentation">📖</a></td>
-    </tr>
-  </tbody>
-</table>
-
-<!-- markdownlint-restore -->
-<!-- prettier-ignore-end -->
-
-<!-- ALL-CONTRIBUTORS-LIST:END -->
-
-This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
