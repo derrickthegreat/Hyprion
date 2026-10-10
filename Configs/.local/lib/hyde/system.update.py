@@ -453,7 +453,8 @@ def run_upgrades(names: list[str], width: int) -> tuple[list[str], list[str]]:
     return done, failed
 
 
-def print_after(done: list[str], failed: list[str], pacnew_before: list[str], width: int) -> None:
+def print_after(done: list[str], failed: list[str], pacnew_before: list[str], width: int) -> list[str]:
+    """Report what the update left to do. Returns the orphaned packages."""
     print()
     print_rule(width)
     print(paint("After the update", BOLD))
@@ -468,10 +469,59 @@ def print_after(done: list[str], failed: list[str], pacnew_before: list[str], wi
             print(f"      {paint(path, MUTED)}")
     orphans = call_hook("orphans", default=[])
     if orphans:
-        print(f"   {ICON_ORPHANS} {plural(len(orphans), 'orphaned package')}, review with {paint('pacman -Qdt', CYAN)}")
+        print(f"   {ICON_ORPHANS} {plural(len(orphans), 'orphaned package')}, nothing installed needs them")
     savings = call_hook("cache_savings")
     if savings:
         print(f"   {ICON_CACHE} {savings} of old packages in the cache, clear with {paint('sudo paccache -r', CYAN)}")
+    return orphans
+
+
+def pick_orphans(orphans: list[str]) -> list[str]:
+    """Mark orphans to remove in fzf, each shown with its description."""
+    if not shutil.which("fzf"):
+        print(paint("fzf isn't installed, so there's nothing to pick with.", YELLOW))
+        return []
+    descriptions = call_hook("describe", orphans, default={})
+    width = max(map(len, orphans))
+    lines = [f"{name.ljust(width)}  {paint(descriptions.get(name, ''), MUTED)}".rstrip() for name in orphans]
+    result = subprocess.run(
+        [
+            "fzf", "--multi", "--ansi", "--layout=reverse", "--bind=ctrl-a:toggle-all", "--prompt=Remove> ",
+            "--header=Tab marks a package · Ctrl-A toggles all · Enter removes the marked · Esc cancels",
+        ],
+        input="\n".join(lines),
+        stdout=subprocess.PIPE,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        return []
+    return [pm.strip_ansi(line).split()[0] for line in result.stdout.splitlines() if line.strip()]
+
+
+def clean_orphans(orphans: list[str]) -> None:
+    """Offer to remove orphans, then to mark the ones kept so they stop showing up."""
+    keys = f"[{paint('a', BOLD)}]ll  [{paint('p', BOLD)}]ick  [{paint('N', BOLD)}]o"
+    try:
+        answer = input(f"\nRemove orphaned packages? {keys} ").strip().lower()[:1]
+    except EOFError:
+        return
+    if answer == "a":
+        chosen = orphans
+    elif answer == "p":
+        chosen = pick_orphans(orphans)
+    else:
+        return
+    if not chosen:
+        return
+    if not call_hook("remove_orphans", chosen, default=False):
+        print(paint("Orphans left in place.", YELLOW))
+        return
+    # -Rns can't take an unpicked orphan with it, since by definition nothing depends on one
+    kept = [name for name in orphans if name not in chosen]
+    if kept and prompt_yes_no(f"Mark the other {plural(len(kept), 'orphan')} as explicitly installed so they stop showing up?", default_yes=False):
+        if not call_hook("mark_explicit", kept, default=False):
+            print(paint("Couldn't mark them, they'll show up again next time.", YELLOW))
 
 
 def offer_restart(upgraded: list[Pending], kernels: set[str]) -> bool:
@@ -525,12 +575,14 @@ def interactive() -> int:
             done, failed = run_upgrades(chosen, width)
             upgraded = [pkg for manager in updates if manager.name in done for pkg in manager.packages or []]
             exit_code = 1 if failed else 0
-            print_after(done, failed, pacnew_before, width)
+            orphans = print_after(done, failed, pacnew_before, width)
             remaining = collect_updates(progress=True)
             store_records(remaining)
             left = total_updates(remaining)
             if left:
                 print("   " + paint(f"{plural(left, 'update')} still pending", YELLOW))
+            if orphans:
+                clean_orphans(orphans)
         else:
             print(paint("\nSkipped updates.", YELLOW))
     refresh_waybar()

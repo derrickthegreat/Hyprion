@@ -4,5 +4,12 @@ case "$1" in
     -Sup) upgraded pacman || show pacman-sizes ;;
     -Syu) fake_upgrade pacman ;;
     -Qdtq) show orphans ;;
+    -Qi) show orphans-info ;;
+    -Rns)
+        shift
+        echo "Packages ($#) $*"
+        read -rp ":: Do you want to remove these packages? [Y/n] " answer
+        case "$answer" in [nN]*) exit 1 ;; esac ;;
+    -D) echo "[fake pacman] would mark explicitly installed: ${*:3}" ;;
     *) echo "[fake pacman] not faked: pacman $*" >&2; exit 1 ;;
 esac

@@ -181,6 +181,30 @@ def orphans(ctx) -> list[str]:
     return ctx.capture(["pacman", "-Qdtq"], check=False).split()
 
 
+def remove_orphans(ctx, packages: Sequence[str]) -> bool:
+    """Remove with -Rns, not remove()'s cascading -Rsc. pacman lists the packages and asks first."""
+    return ctx.run(["sudo", "pacman", "-Rns", *packages], check=False).returncode == 0
+
+
+def mark_explicit(ctx, packages: Sequence[str]) -> bool:
+    """Record packages as explicitly installed so they stop counting as orphans."""
+    return ctx.run(["sudo", "pacman", "-D", "--asexplicit", *packages], check=False).returncode == 0
+
+
+def describe(ctx, packages: Sequence[str]) -> dict[str, str]:
+    """Map installed packages to their one-line descriptions."""
+    descriptions = {}
+    name = None
+    # ctx.run forces LC_ALL=C, so the field names aren't translated
+    for line in ctx.capture(["pacman", "-Qi", *packages], check=False).splitlines():
+        key, _, value = line.partition(":")
+        if key.strip() == "Name":
+            name = value.strip()
+        elif key.strip() == "Description" and name:
+            descriptions[name] = value.strip()
+    return descriptions
+
+
 def cache_savings(ctx) -> str | None:
     """How much `paccache -r` would free, e.g. "1.2 GiB"."""
     if not shutil.which("paccache"):

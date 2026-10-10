@@ -12,6 +12,7 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
+from unittest import mock
 
 LIB = Path(__file__).resolve().parents[3] / "Configs/.local/lib/hyde"
 sys.path.insert(0, str(LIB))
@@ -140,6 +141,40 @@ class RequirementTests(unittest.TestCase):
         self.assertEqual(su.keep_requirements(["paru"], ["paru"]), ["paru"])
 
 
+class OrphanTests(unittest.TestCase):
+    orphans = ["go", "meson", "uv"]
+
+    def clean(self, answers, picked=(), removed=True):
+        calls = []
+
+        def hook(name, *args, default=None):
+            calls.append((name, *args))
+            return removed
+
+        with mock.patch("builtins.input", side_effect=answers), \
+                mock.patch.object(su, "call_hook", hook), \
+                mock.patch.object(su, "pick_orphans", return_value=list(picked)), \
+                contextlib.redirect_stdout(io.StringIO()):
+            su.clean_orphans(self.orphans)
+        return calls
+
+    def test_enter_keeps_everything(self):
+        self.assertEqual(self.clean([""]), [])
+
+    def test_remove_all(self):
+        self.assertEqual(self.clean(["a"]), [("remove_orphans", self.orphans)])
+
+    def test_pick_then_mark_the_rest(self):
+        calls = self.clean(["p", "y"], picked=["meson"])
+        self.assertEqual(calls, [("remove_orphans", ["meson"]), ("mark_explicit", ["go", "uv"])])
+
+    def test_nothing_picked(self):
+        self.assertEqual(self.clean(["p"]), [])
+
+    def test_declined_removal_stops_there(self):
+        self.assertEqual(self.clean(["p"], picked=["meson"], removed=False), [("remove_orphans", ["meson"])])
+
+
 class PacmanBackendTests(unittest.TestCase):
     def test_parse_update_lines(self):
         output = "foo 1.0-1 -> 1.1-1\n\x1b[1mbar\x1b[0m 2-1 -> 3-1\nheld 1-1 -> 2-1 [ignored]\n:: warning\n"
@@ -176,6 +211,12 @@ class PacmanBackendTests(unittest.TestCase):
             self.assertIsNone(pacman.cache_savings(FakeCtx("==> no candidate packages found for pruning")))
         finally:
             pacman.shutil.which = original
+
+    def test_describe(self):
+        output = (Path(__file__).parent / "fixtures/busy/orphans-info").read_text()
+        descriptions = pacman.describe(FakeCtx(output), ["asciidoc", "dos2unix", "cdrtools"])
+        self.assertEqual(descriptions["dos2unix"], "Text file format converter")
+        self.assertEqual(len(descriptions), 3)
 
 
 if __name__ == "__main__":
