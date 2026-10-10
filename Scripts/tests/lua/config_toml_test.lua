@@ -137,6 +137,25 @@ font_hinting = ""
 ]])
 check("empty string overrides", c.ui.font_hinting, "")
 
+-- 7. A file that doesn't parse is skipped, not raised, and keeps every default.
+fresh_defaults()
+local bad = write_tmp([[
+[desktop.start]
+bar = "first"
+[desktop.start]
+bar = "second"
+]])
+local ok, result, reason = pcall(hyde.config.load_toml, bad)
+os.remove(bad)
+check("bad TOML does not raise", ok, true)
+check("bad TOML returns nil", result, nil)
+check("bad TOML reason is line + message", reason, "line 3: Cannot override existing table 'start' with new table")
+check("bad TOML keeps start.bar default", hyde.config.start.bar, "default-bar")
+
+-- 8. A leading UTF-8 byte order mark is not part of the document.
+c = load('\239\187\191[desktop.start]\nbar = "bom-bar"\n')
+check("BOM-prefixed file parses", c.start.bar, "bom-bar")
+
 if failures > 0 then
 	io.stderr:write(failures .. " failure(s)\n")
 	os.exit(1)

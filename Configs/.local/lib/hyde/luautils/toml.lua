@@ -1238,6 +1238,9 @@ function tinytoml.parse(filename, options)
       sm.filename = filename
    end
 
+   -- Notepad and some Windows editors save a UTF-8 byte order mark; it isn't TOML.
+   if sm.input:sub(1, 3) == "\239\187\191" then sm.input = sm.input:sub(4) end
+
    sm.i = 1
    sm.keys = {}
    sm.arrays = {}

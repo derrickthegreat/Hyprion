@@ -172,6 +172,35 @@ function hyde.config.route_toml(data)
 	return hyde.config
 end
 
+-- tinytoml's error spans a source excerpt and a spec link; keep "line N: reason".
+local function toml_error_summary(err)
+	err = tostring(err)
+	local line = err:match(", line (%d+):")
+	local reason = err:match("\n%s*%d+ |[^\n]*\n\n?([^\n]+)")
+	if not reason then
+		reason = err:gsub("^[^\n]-:%d+: ", ""):match("[^\n]*%S[^\n]*") or err
+	end
+	return line and ("line " .. line .. ": " .. reason) or reason
+end
+
+-- Shown on "hyprland.start" (first load) or "config.reloaded" (later ones), as
+-- binds.lua does, so the message waits for a screen instead of firing mid-load.
+local function notify_toml_error(text)
+	local function show()
+		if type(hl.notification) == "table" and type(hl.notification.create) == "function" then
+			pcall(hl.notification.create, {text = text, timeout = 15000})
+		end
+	end
+	if type(hl.on) == "function" then
+		hl.on("hyprland.start", show)
+		hl.on("config.reloaded", show)
+	else
+		show()
+	end
+end
+
+-- A file that doesn't parse is skipped, not raised: an error here would abort
+-- hyprland.lua and drop Hyprland to its example config. Returns nil, reason.
 function hyde.config.load_toml(filename)
 	if type(toml) ~= "table" or type(toml.parse) ~= "function" then
 		-- error("TOML parser not available")
@@ -179,7 +208,14 @@ function hyde.config.load_toml(filename)
 	end
 	local ok, data = pcall(toml.parse, filename)
 	if not ok then
-		error("Failed to parse TOML: " .. tostring(data))
+		local reason = toml_error_summary(data)
+		local home = os.getenv("HOME")
+		local shown = tostring(filename)
+		if home and shown:find(home .. "/", 1, true) == 1 then
+			shown = "~" .. shown:sub(#home + 1)
+		end
+		notify_toml_error("[Hyprion] Ignoring " .. shown .. ", " .. reason)
+		return nil, reason
 	end
 
 	return hyde.config.route_toml(data)
