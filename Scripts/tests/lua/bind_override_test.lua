@@ -4,6 +4,8 @@
 
 local root = arg[0]:match("^(.*)/Scripts/tests/lua/[^/]+$") or "."
 local lua_root = root .. "/Configs/.local/share/hypr/lua"
+-- dispatcher.lua requires hyde.utils, which hyde.lua's search path finds live.
+package.path = lua_root .. "/?.lua;" .. package.path
 
 local ALIASES = {CONTROL = "CTRL", WIN = "SUPER", LOGO = "SUPER", MOD1 = "ALT", MOD4 = "SUPER"}
 
