@@ -48,15 +48,15 @@
   "custom/launcher": {
     "format": "",
     "tooltip": false,
-    "on-click": "hyde-shell rofilaunch"
+    "on-click": "setsid -f hyde-shell rofilaunch"
   },
   "custom/text#file": {
     "format": "File",
-    "on-click": "hyde-shell open --fall dolphin file-manager"
+    "on-click": "setsid -f hyde-shell open --fall dolphin file-manager"
   },
   "custom/text#edit": {
     "format": "Edit",
-    "on-click": "krita"
+    "on-click": "setsid -f krita"
   },
   "custom/text#view": {
     "format": "View"
@@ -65,7 +65,7 @@
     "format": "Help",
     "tooltip": true,
     "tooltip-format": "Left-click for keybinds; right-click for HyDE options",
-    "on-click": "hyde-shell keybinds_hint",
+    "on-click": "setsid -f hyde-shell keybinds_hint",
     "menu": "on-click-right",
     "menu-file": "${HYDE_WAYBAR_MENU_DIR:-$XDG_DATA_HOME/waybar/menus}/hyde-menu.xml",
     "menu-actions": {

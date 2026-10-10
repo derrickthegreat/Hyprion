@@ -3,6 +3,6 @@
         "format": "\udb84\udd04 ",
         "rotate": 0,
         "tooltip-format": "\udb84\udd04  Display settings",
-        "on-click": "nwg-displays"
+        "on-click": "setsid -f nwg-displays"
     }
 }

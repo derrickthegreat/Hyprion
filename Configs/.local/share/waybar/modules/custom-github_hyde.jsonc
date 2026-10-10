@@ -3,6 +3,6 @@
         "format": "\ue709 ",
         "rotate": 0,
         "tooltip-format": "\ue709 Hyprion repository",
-        "on-click": "xdg-open https://github.com/derrickthegreat/Hyprion"
+        "on-click": "setsid -f xdg-open https://github.com/derrickthegreat/Hyprion"
     }
 }

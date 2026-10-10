@@ -4,7 +4,7 @@
     "return-type": "json",
     "format": "{0}",
     "rotate": 0,
-    "on-click": "hyde-shell system.update up",
+    "on-click": "setsid -f hyde-shell system.update up",
     "interval": 21600,
     "tooltip": true,
     "signal": 20

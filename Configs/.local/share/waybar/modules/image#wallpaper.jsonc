@@ -1,8 +1,8 @@
 {
     "image#wallpaper": {
 	"exec": "realpath $XDG_CACHE_HOME/hyde/wall.set; echo -e \"◉ Right-click: Select theme | ◈ Left-click: Select wallpaper\"",
-    "on-click" : "hyde-shell app -t scope -- wallpaper.sh --select --global;pkill -RTMIN+24 waybar",
-    "on-click-right" : "hyde-shell app -t scope -- theme.select.sh;pkill -RTMIN+24 waybar",
+    "on-click" : "setsid -f sh -c 'hyde-shell app -t scope -- wallpaper.sh --select --global; pkill -RTMIN+24 waybar'",
+    "on-click-right" : "setsid -f sh -c 'hyde-shell app -t scope -- theme.select.sh; pkill -RTMIN+24 waybar'",
     "tooltip" : true,
     "signal": 24
 }

@@ -131,6 +131,18 @@ class StatusTests(unittest.TestCase):
         self.assertEqual(payload["text"], su.ICON_REBOOT)
 
 
+class LaunchTests(unittest.TestCase):
+    def test_terminal_leaves_the_callers_session(self):
+        # Waybar killpg()s an on-click's group on reload; the terminal running pacman must not be in it.
+        with mock.patch.object(su.shutil, "which", return_value="/usr/bin/xdg-terminal-exec"), \
+             mock.patch.object(su.subprocess, "run") as run:
+            self.assertEqual(su.launch_interactive(), 0)
+        args, kwargs = run.call_args
+        self.assertEqual(args[0][0], "/usr/bin/xdg-terminal-exec")
+        self.assertEqual(args[0][-1], "interactive")
+        self.assertTrue(kwargs.get("start_new_session"))
+
+
 class RequirementTests(unittest.TestCase):
     def test_aur_helper_waits_for_pacman(self):
         with contextlib.redirect_stdout(io.StringIO()) as out:

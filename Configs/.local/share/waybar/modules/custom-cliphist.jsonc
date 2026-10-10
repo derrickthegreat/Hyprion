@@ -3,7 +3,7 @@
         "format": " {0}",
         "rotate": 0,
         "tooltip-format": "\udb80\udd47 Clipboard history",
-        "on-click": "sleep 0.1 && hyde-shell cliphist -c",
+        "on-click": "sleep 0.1 && setsid -f hyde-shell cliphist -c",
         "menu": "on-click-right",
         "menu-file": "${HYDE_WAYBAR_MENU_DIR:-$XDG_DATA_HOME/waybar/menus}/clipboard.xml",
         "menu-actions": {

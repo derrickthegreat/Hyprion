@@ -4,7 +4,7 @@
     "rotate": 0,
     "format-source": "\udb80\udf6c",
     "format-source-muted": "\uf131",
-    "on-click": "pavucontrol-qt -t 4 || pavucontrol -t 4",
+    "on-click": "setsid -f sh -c 'pavucontrol-qt -t 4 || pavucontrol -t 4'",
     "on-click-middle": "hyde-shell volumecontrol -i m",
     "on-scroll-up": "hyde-shell volumecontrol -i i",
     "on-scroll-down": "hyde-shell volumecontrol -i d",

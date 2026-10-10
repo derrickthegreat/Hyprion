@@ -596,7 +596,13 @@ def interactive() -> int:
 def launch_interactive() -> int:
     launcher = shutil.which("xdg-terminal-exec")
     if launcher is not None:
-        subprocess.run([launcher, "--title=systemupdate", "--", sys.executable, str(SCRIPT_PATH), "interactive"], check=False)
+        # Own session: Waybar SIGTERMs its on-click's process group on every reload,
+        # and a theme change mid-update must not take pacman down with the terminal.
+        subprocess.run(
+            [launcher, "--title=systemupdate", "--", sys.executable, str(SCRIPT_PATH), "interactive"],
+            check=False,
+            start_new_session=True,
+        )
         return 0
     if sys.stdout.isatty():
         return interactive()
