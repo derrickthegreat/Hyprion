@@ -25,11 +25,19 @@ map_floor() {
 }
 init_query() {
     [[ -f $cpuinfo_file ]] && source "$cpuinfo_file"
-    if [[ -z $CPUINFO_MODEL ]]; then
+    # The file holds four keys. Older versions appended CPUINFO_MAX_FREQ="" on every
+    # poll where lscpu has no "CPU max MHz" (VMs); squash such a file to one line per key.
+    local cached=()
+    [[ -f $cpuinfo_file ]] && mapfile -t cached <"$cpuinfo_file"
+    if ((${#cached[@]} > 4)); then
+        awk -F= '!seen[$1]++' "$cpuinfo_file" >"$cpuinfo_file.$$" && mv -f "$cpuinfo_file.$$" "$cpuinfo_file"
+    fi
+    # Set, not non-empty: a field lscpu doesn't report is cached as "" and looked up once
+    if [[ -z ${CPUINFO_MODEL+x} ]]; then
         CPUINFO_MODEL=$(lscpu | awk -F': ' '/Model name/ {gsub(/^ *| *$| CPU.*/,"",$2); print $2}')
         echo "CPUINFO_MODEL=\"$CPUINFO_MODEL\"" >>"$cpuinfo_file"
     fi
-    if [[ -z $CPUINFO_MAX_FREQ ]]; then
+    if [[ -z ${CPUINFO_MAX_FREQ+x} ]]; then
         CPUINFO_MAX_FREQ=$(lscpu | awk '/CPU max MHz/ { sub(/\..*/,"",$4); print $4}')
         echo "CPUINFO_MAX_FREQ=\"$CPUINFO_MAX_FREQ\"" >>"$cpuinfo_file"
     fi
