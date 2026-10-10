@@ -144,6 +144,23 @@ nvidia_detect() {
     fi
 }
 
+# Installs the dependencies of the deez config given in "$@" and checks they
+# landed. deez exits 0 whatever the package manager did (a failed transaction, a
+# missing target, a declined prompt), so the result is read back with --check.
+deez_deps_install() {
+    local report
+    "${deez_exe:?}" deps --install "$@" || return 1
+    report="$("${deez_exe}" deps --check "$@" 2>&1)" || {
+        printf '%s\n' "${report}"
+        return 1
+    }
+    if grep -q 'Deps: missing' <<<"${report}"; then
+        grep -F '[err]' <<<"${report}" || printf '%s\n' "${report}"
+        return 1
+    fi
+    return 0
+}
+
 prompt_timer() {
     set +e
     unset PROMPT_INPUT

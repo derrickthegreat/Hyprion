@@ -315,8 +315,8 @@ EOF
 		print_log -y "[CORE] " -b "dry-run :: " "Would install core packages"
 	else
 		print_log -g "[CORE] " -b "install :: " "Core system packages..."
-		"${deez_exe}" deps --install --config "${core_toml}" --source "${cloneDir}" || {
-			print_log -r "[CORE] " -crit "ERROR" "Core package installation failed"
+		deez_deps_install --config "${core_toml}" --source "${cloneDir}" || {
+			print_log -r "[CORE] " -crit "ERROR" "Core package installation failed; deal with the error above and run the installer again"
 			exit 1
 		}
 		print_log -g "[CORE] " -b "complete :: " "Core packages installed"
@@ -391,8 +391,8 @@ EOF
 		print_log -y "[CORE] " -b "dry-run :: " "Would re-check core deps"
 	else
 		print_log -g "[CORE] " -b "verify :: " "Verifying core packages..."
-		"${deez_exe}" deps --install --config "${core_toml}" --source "${cloneDir}" || {
-			print_log -r "[CORE] " -crit "ERROR" "Core package verification failed"
+		deez_deps_install --config "${core_toml}" --source "${cloneDir}" || {
+			print_log -r "[CORE] " -crit "ERROR" "Core package verification failed; deal with the error above and run the installer again"
 			exit 1
 		}
 	fi
@@ -404,8 +404,8 @@ EOF
 		print_log -y "[EXTRA] " -b "dry-run :: " "Would re-check extra deps"
 	else
 		print_log -g "[EXTRA] " -b "verify :: " "Verifying extra packages..."
-		"${deez_exe}" deps --install --config "${extra_toml}" --source "${cloneDir}" || {
-			print_log -r "[EXTRA] " -crit "ERROR" "Extra package verification failed"
+		deez_deps_install --config "${extra_toml}" --source "${cloneDir}" || {
+			print_log -r "[EXTRA] " -crit "ERROR" "Extra package verification failed; deal with the error above and run the installer again"
 			exit 1
 		}
 		print_log -g "[DEPS] " -b "verify :: " "All packages verified"
@@ -420,9 +420,9 @@ EOF
 		print_log -y "[SHELL] " -b "dry-run :: " "Would install ${myShell:-the chosen shell}"
 	elif chk_shell "${myShell:-}"; then
 		print_log -g "[SHELL] " -b "install :: " "${myShell}..."
-		"${deez_exe}" deps --install --config "${installDir}/dots-groups/shell.toml" \
+		deez_deps_install --config "${installDir}/dots-groups/shell.toml" \
 			--source "${cloneDir}" --dots "${myShell}" || {
-			print_log -r "[SHELL] " -crit "ERROR" "${myShell} installation failed"
+			print_log -r "[SHELL] " -crit "ERROR" "${myShell} installation failed; deal with the error above and run the installer again"
 			exit 1
 		}
 	fi
