@@ -147,4 +147,6 @@ end
 -- exec = $exec.mkdir & $exec.keybinds_hint
 hl.exec_cmd(hyde.sh.keybinds_hint("--reload")) -- Regenerate keybinds hint on reload
 
-hl.exec_cmd("hyprctl setcursor " .. hyde.config.ui.cursor_theme .. " " .. hyde.config.ui.cursor_size) -- Reset cursor
+-- The cursor theme comes from a theme's hypr.theme or config.toml, and exec_cmd runs it through sh
+local sq = hyde.utils.shell_quote
+hl.exec_cmd("hyprctl setcursor " .. sq(hyde.config.ui.cursor_theme) .. " " .. sq(hyde.config.ui.cursor_size)) -- Reset cursor

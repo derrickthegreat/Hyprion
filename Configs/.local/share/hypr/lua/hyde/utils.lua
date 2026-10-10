@@ -115,6 +115,18 @@ function util.regex_compile(spec, anchored)
   return out
 end
 
+-- Quote one argument for `sh -c`, which is how hl.exec_cmd runs a string.
+-- Values from a theme or config.toml must go through this before joining.
+--
+-- Example:
+--   util.shell_quote("it's") --> 'it'\''s'
+function util.shell_quote(arg)
+  arg = tostring(arg)
+  -- Escape single quotes: ' -> '\''
+  arg = arg:gsub("'", "'\\''")
+  return "'" .. arg .. "'"
+end
+
 _G.hyde = _G.hyde or {}
 _G.hyde.utils = util
 _G.check_require = util.check_require

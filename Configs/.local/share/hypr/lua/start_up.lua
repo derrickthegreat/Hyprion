@@ -17,7 +17,9 @@ hl.on(
 		check_exec(hs.blue_light_filter_daemon)
 		check_exec(hs.notifications)
 		check_exec(hs.auth_dialogue)
-		check_exec("hyprctl setcursor " .. hyde.config.ui.cursor_theme .. " " .. hyde.config.ui.cursor_size)
+		-- Theme-supplied values: quote them, exec_cmd runs the string through sh
+		local sq = hyde.utils.shell_quote
+		check_exec("hyprctl setcursor " .. sq(hyde.config.ui.cursor_theme) .. " " .. sq(hyde.config.ui.cursor_size))
 		check_exec(hs.text_clipboard)
 		check_exec(hs.image_clipboard)
 		check_exec(hs.clipboard_persist)

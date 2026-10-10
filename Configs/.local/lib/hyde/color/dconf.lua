@@ -80,6 +80,8 @@ if ok_term and term then
     end
 end
 
-if os.getenv("HYPRLAND_INSTANCE_SIGNATURE") then
-    os.execute(string.format("hyprctl setcursor '%s' %d", CURSOR_THEME, CURSOR_SIZE))
+-- CURSOR_THEME comes from a downloaded theme's hypr.theme: bare '...' let a
+-- quote in it close the string and run the rest.
+if CURSOR_THEME and os.getenv("HYPRLAND_INSTANCE_SIGNATURE") then
+    os.execute(string.format("hyprctl setcursor %s %d", shell_quote(CURSOR_THEME), CURSOR_SIZE))
 end

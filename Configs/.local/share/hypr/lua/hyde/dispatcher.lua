@@ -58,12 +58,7 @@ end
 
 
 -- Shell-quote a single argument for safe command-line usage
-local function shell_quote(arg)
-    arg = tostring(arg)
-    -- Escape single quotes: ' -> '\''
-    arg = arg:gsub("'", "'\\''")
-    return "'" .. arg .. "'"
-end
+local shell_quote = require("hyde.utils").shell_quote
 
 local function join_args(args)
     local out = {}
