@@ -45,13 +45,13 @@ esac
 export fntSize=$((y_mon * 2 / 100))
 cacheDir="$HYDE_CACHE_HOME"
 dcol_mode="${dcol_mode:-dark}"
-[ -f "$cacheDir/wall.dcol" ] && source "$cacheDir/wall.dcol"
+[ -f "$cacheDir/wall.dcol" ] && load_dcol "$cacheDir/wall.dcol"
 enableWallDcol="${enableWallDcol:-1}"
 if [ "$enableWallDcol" -eq 0 ]; then
     HYDE_THEME_DIR="${HYDE_THEME_DIR:-$confDir/hyde/themes/$HYDE_THEME}"
     dcol_mode=$(get_hyprConf "COLOR_SCHEME")
     dcol_mode=${dcol_mode#prefer-}
-    [ -f "$HYDE_THEME_DIR/theme.dcol" ] && source "$HYDE_THEME_DIR/theme.dcol"
+    [ -f "$HYDE_THEME_DIR/theme.dcol" ] && load_dcol "$HYDE_THEME_DIR/theme.dcol"
 fi
 {
     [ "$dcol_mode" == "dark" ] && export BtnCol="white"

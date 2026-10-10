@@ -343,6 +343,45 @@ set_hash() {
     local hashImage="$1"
     "$hashMech" "$hashImage" | awk '{print $1}'
 }
+##
+# Loads a .dcol file as data. theme.dcol comes verbatim from a downloaded
+# theme and its values land in sed scripts, so only the keys and formats
+# wallbash.sh writes are set; other lines get one warning. Exports under set -a.
+#
+# Arguments:
+#   $1 - .dcol file
+##
+load_dcol() {
+    local file=$1 line key value n=0 skipped=()
+    local colour='^dcol_(pry[1-4]|txt[1-4]|[1-4]xa[1-9])'
+    local hex='^[0-9A-Fa-f]{6}$'
+    local rgba='^rgba\([0-9]{1,3},[0-9]{1,3},[0-9]{1,3},(\\1|[0-9]*\.?[0-9]+)\)$'
+    local rgb='^[0-9]{1,3},[0-9]{1,3},[0-9]{1,3}$'
+    while IFS= read -r line || [ -n "$line" ]; do
+        n=$((n + 1))
+        line=${line%$'\r'}
+        [[ $line =~ ^[[:space:]]*(#|$) ]] && continue
+        if [[ ! $line =~ ^(dcol_[A-Za-z0-9_]+)=(.*)$ ]]; then
+            skipped+=("$n")
+            continue
+        fi
+        key=${BASH_REMATCH[1]}
+        value=${BASH_REMATCH[2]}
+        [[ $value =~ ^\"(.*)\"$ || $value =~ ^\'(.*)\'$ ]] && value=${BASH_REMATCH[1]}
+        if [[ -z $value && $key =~ ${colour}(_rgba|_rgb)?$ ]] ||
+            [[ $key == dcol_mode && $value =~ ^(dark|light)$ ]] ||
+            [[ $key =~ ${colour}$ && $value =~ $hex ]] ||
+            [[ $key =~ ${colour}_rgba$ && $value =~ $rgba ]] ||
+            [[ $key =~ ${colour}_rgb$ && $value =~ $rgb ]]; then
+            printf -v "$key" '%s' "$value"
+        else
+            skipped+=("$n")
+        fi
+    done <"$file" || return 1
+    [ "${#skipped[@]}" -eq 0 ] ||
+        print_log -sec "wallbash" -warn "dcol" "ignored line(s) ${skipped[*]} of $file: not a wallbash colour"
+    return 0
+}
 check_package() {
     local lock_file="${XDG_RUNTIME_DIR:-/tmp}/hyde/__package.lock"
     mkdir -p "${XDG_RUNTIME_DIR:-/tmp}/hyde"

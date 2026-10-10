@@ -190,7 +190,7 @@ while [[ $# -gt 0 ]]; do
         dcol_colors="$2"
         if [ -f "$dcol_colors" ]; then
             printf "[Source] %s\n" "$dcol_colors"
-            source "$dcol_colors"
+            load_dcol "$dcol_colors"
             shift 2
         else
             dcol_colors="$(find -H "$dcolDir" -type f -name "*.dcol" | shuf -n 1)"
@@ -225,9 +225,9 @@ if [ ! -f "$dcol_file" ]; then
     "$scrDir/wallpaper/cache.sh" commence -w "$wallbash_image" &>/dev/null
 fi
 set -a
-source "$dcol_file"
+load_dcol "$dcol_file"
 if [ -f "$HYDE_THEME_DIR/theme.dcol" ] && [ "$enableWallDcol" -eq 0 ]; then
-    source "$HYDE_THEME_DIR/theme.dcol"
+    load_dcol "$HYDE_THEME_DIR/theme.dcol"
     print_log -sec "wallbash" -stat "override" "dominant colors from $HYDE_THEME theme"
     print_log -sec "wallbash" -stat " NOTE" "Remove \"$HYDE_THEME_DIR/theme.dcol\" to use wallpaper dominant colors"
 fi
@@ -253,7 +253,7 @@ export WALLBASH_DIRS PATH
 export -f fn_wallbash print_log pkg_installed create_wallbash_substitutions preprocess_substitutions rgba_to_rgb wallbash_trace
 if [ -n "$dcol_colors" ]; then
     set -a
-    source "$dcol_colors"
+    load_dcol "$dcol_colors"
     print_log -sec "wallbash" -stat "single instance" "Colors: $dcol_colors"
     set +a
 fi
