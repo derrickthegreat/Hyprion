@@ -11,6 +11,8 @@ import time
 import sys
 import hashlib
 import signal
+import fcntl
+import tempfile
 
 from pathlib import Path
 
@@ -96,6 +98,51 @@ def get_file_hash(filepath):
     return sha256.hexdigest()
 
 
+def write_atomic(path, content):
+    """Replace a file in one rename, so waybar and other waybar.py runs never read it half-written."""
+    target = os.path.realpath(path)
+    fd, tmp_path = tempfile.mkstemp(dir=os.path.dirname(target), prefix=".waybar.py-")
+    try:
+        with os.fdopen(fd, "wb" if isinstance(content, bytes) else "w") as file:
+            file.write(content)
+        if os.path.exists(target):
+            shutil.copymode(target, tmp_path)
+        else:
+            os.chmod(tmp_path, 0o644)
+        os.replace(tmp_path, target)
+    except BaseException:
+        try:
+            os.unlink(tmp_path)
+        except FileNotFoundError:
+            pass
+        raise
+
+
+def copy_atomic(src, dst):
+    with open(src, "rb") as file:
+        write_atomic(dst, file.read())
+
+
+_lock_file = None
+
+
+def acquire_lock():
+    """Run one waybar.py at a time. Two layout switches in a row used to interleave:
+    one reloaded waybar while the other had config.jsonc truncated, and waybar exited."""
+    global _lock_file
+    lock_dir = os.path.join(str(xdg_runtime_dir() or xdg_state_home()), "hyde")
+    os.makedirs(lock_dir, exist_ok=True)
+    _lock_file = open(os.path.join(lock_dir, "waybar.py.lock"), "w")
+    fcntl.flock(_lock_file, fcntl.LOCK_EX)
+
+
+def release_lock():
+    global _lock_file
+    if _lock_file:
+        _lock_file.close()
+        _lock_file = None
+
+
 def in_backup_dir(path, root):
     """Whether path lies in a "backup" directory below root.
 
@@ -157,8 +204,7 @@ def set_state_value(key, value):
     STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
 
     if not STATE_FILE.exists():
-        with open(STATE_FILE, "w") as file:
-            file.write(f"{key}={value}\n")
+        write_atomic(STATE_FILE, f"{key}={value}\n")
         return True
 
     existing_lines = []
@@ -179,8 +225,7 @@ def set_state_value(key, value):
 
     existing_lines.append(f"{key}={value}")
 
-    with open(STATE_FILE, "w") as file:
-        file.write("\n".join(existing_lines) + "\n")
+    write_atomic(STATE_FILE, "\n".join(existing_lines) + "\n")
 
     return True
 
@@ -220,7 +265,7 @@ def get_current_layout_from_config():
         set_state_value("WAYBAR_LAYOUT_PATH", layout)
         set_state_value("WAYBAR_LAYOUT_NAME", layout_name)
 
-        shutil.copyfile(layout, CONFIG_JSONC)
+        copy_atomic(layout, CONFIG_JSONC)
         logger.debug(f"Created config.jsonc with first layout: {layout}")
         return layout
 
@@ -248,7 +293,7 @@ def get_current_layout_from_config():
         set_state_value("WAYBAR_LAYOUT_PATH", layout)
         set_state_value("WAYBAR_LAYOUT_NAME", layout_name)
 
-        shutil.copyfile(layout, CONFIG_JSONC)
+        copy_atomic(layout, CONFIG_JSONC)
         logger.debug(f"Updated config.jsonc with layout: {layout}")
 
     return layout
@@ -268,14 +313,17 @@ def ensure_state_file():
         )
         style_path = resolve_style_path(current_layout) if current_layout else ""
 
-        with open(STATE_FILE, "w") as file:
-            if current_layout:
-                file.write(f"WAYBAR_LAYOUT_PATH={current_layout}\n")
-                file.write(f"WAYBAR_LAYOUT_NAME={layout_name}\n")
-                file.write(f"WAYBAR_STYLE_PATH={style_path}\n")
-                logger.debug(f"Created state file with layout: {current_layout}")
-            else:
-                logger.warning("No layout found to write to state file")
+        if current_layout:
+            write_atomic(
+                STATE_FILE,
+                f"WAYBAR_LAYOUT_PATH={current_layout}\n"
+                f"WAYBAR_LAYOUT_NAME={layout_name}\n"
+                f"WAYBAR_STYLE_PATH={style_path}\n",
+            )
+            logger.debug(f"Created state file with layout: {current_layout}")
+        else:
+            write_atomic(STATE_FILE, "")
+            logger.warning("No layout found to write to state file")
         return
 
     with open(STATE_FILE, "r") as file:
@@ -346,7 +394,7 @@ def _apply_layout(layout_path, style_path, notify_label):
     set_state_value("WAYBAR_STYLE_PATH", style_path)
 
     style_filepath = os.path.join(str(xdg_config_home()), "waybar", "style.css")
-    shutil.copyfile(layout_path, CONFIG_JSONC)
+    copy_atomic(layout_path, CONFIG_JSONC)
     write_style_file(style_filepath, style_path)
     update_icon_size()
     update_border_radius()
@@ -537,8 +585,7 @@ def write_style_file(style_filepath, source_filepath):
     /* Users who want to override the current style add/edit 'user-style.css' */
     @import "user-style.css";
     """
-    with open(style_filepath, "w") as file:
-        file.write(style_css)
+    write_atomic(style_filepath, style_css)
     logger.debug(f"Successfully wrote style to '{style_filepath}'")
 
 
@@ -547,10 +594,49 @@ def signal_handler(sig, frame):
     sys.exit(0)
 
 
-def _signal_waybar(sig):
-    """Send a signal to the waybar process/unit (systemd or pkill)."""
+def _waybar_pids():
+    """The unit's main process with systemd, otherwise every waybar of this user."""
     if HAS_SYSTEMD:
-        subprocess.run(["systemctl", "--user", "kill", "-s", sig, UNIT_NAME])
+        result = subprocess.run(
+            ["systemctl", "--user", "show", "-p", "MainPID", "--value", UNIT_NAME],
+            capture_output=True, text=True,
+        )
+        pid = result.stdout.strip()
+        return [int(pid)] if pid.isdigit() and pid != "0" else []
+    result = subprocess.run(
+        ["pgrep", "-u", str(os.getuid()), "-x", "waybar"], capture_output=True, text=True
+    )
+    return [int(pid) for pid in result.stdout.split()]
+
+
+def _handles_signal(pid, signum, timeout=3.0):
+    """Wait for pid to install a handler for signum. Waybar sets up its SIGUSR1/SIGUSR2
+    handlers a few ms after it starts, and until then either signal kills it."""
+    deadline = time.monotonic() + timeout
+    while True:
+        try:
+            with open(f"/proc/{pid}/status") as file:
+                caught = next(line for line in file if line.startswith("SigCgt:"))
+        except (OSError, StopIteration):
+            return False
+        if int(caught.split()[1], 16) >> (signum - 1) & 1:
+            return True
+        if time.monotonic() >= deadline:
+            return False
+        time.sleep(0.05)
+
+
+def _signal_waybar(sig):
+    """Send a signal to waybar itself (the unit's main process, or pkill)."""
+    signum = getattr(signal, sig)
+    for pid in _waybar_pids():
+        if not _handles_signal(pid, signum):
+            logger.warning(f"Waybar (PID {pid}) does not handle {sig} yet, not sending it")
+            return
+    # Only the main process: the whole cgroup includes module scripts (checkupdates,
+    # pacman, ...), and SIGUSR1/SIGUSR2 terminate a process that has no handler.
+    if HAS_SYSTEMD:
+        subprocess.run(["systemctl", "--user", "kill", "--kill-whom=main", "-s", sig, UNIT_NAME])
     else:
         subprocess.run(["pkill", f"-{sig}", "-u", str(os.getuid()), "-x", "waybar"])
 
@@ -615,8 +701,30 @@ def kill_waybar():
     logger.debug("Stopped Waybar processes.")
 
 
+def _waybar_inputs():
+    """Hashes of the files waybar.py writes for waybar to read."""
+    config_dir = os.path.join(str(xdg_config_home()), "waybar")
+    paths = [CONFIG_JSONC, os.path.join(config_dir, "style.css")] + [
+        os.path.join(config_dir, "includes", name)
+        for name in ("includes.json", "global.css", "border-radius.css")
+    ]
+    return [get_file_hash(path) if os.path.exists(path) else None for path in paths]
+
+
+_reloaded_inputs = None
+
+
 def restart_waybar():
     """Reload Waybar if running to prevent the hiding bug, otherwise start it."""
+    global _reloaded_inputs
+    # A layout switch reloads in _apply_layout and again at the end of main(). Skip
+    # the second unless the files changed in between: it signalled a just-started bar.
+    inputs = _waybar_inputs()
+    if inputs == _reloaded_inputs:
+        logger.debug("Waybar files unchanged since the last reload, skipping")
+        return
+    _reloaded_inputs = inputs
+
     if is_waybar_running_for_current_user():
         logger.debug("Hot-reloading Waybar config via SIGUSR2...")
         _signal_waybar("SIGUSR2")
@@ -865,8 +973,7 @@ def update_icon_size():
 
     includes_data.update(updated_entries)
 
-    with open(includes_file, "w") as file:
-        json.dump(includes_data, file, indent=4)
+    write_atomic(includes_file, json.dumps(includes_data, indent=4))
     logger.debug(
         f"Successfully updated icon sizes and appended to '{includes_file}' with {len(updated_entries)} entries."
     )
@@ -904,8 +1011,7 @@ def update_global_css():
 }}
 """
 
-    with open(global_css_path, "w") as file:
-        file.write(global_css_content)
+    write_atomic(global_css_path, global_css_content)
     logger.debug(f"Successfully generated global CSS at '{global_css_path}'")
 
 
@@ -1053,7 +1159,7 @@ def update_border_radius():
             template_path = os.path.join(includes_dir, "border-radius.css")
             if os.path.exists(template_path):
                 logger.debug(f"Found template at {template_path}, copying to {css_filepath}")
-                shutil.copyfile(template_path, css_filepath)
+                copy_atomic(template_path, css_filepath)
                 break
         else:
             logger.error("Template for border-radius.css not found in INCLUDES_DIRS")
@@ -1102,8 +1208,7 @@ def update_border_radius():
     updated_content = re.sub(r"\d+pt", f"{border_radius}pt", content)
     logger.debug("Applied border radius value to CSS content")
 
-    with open(css_filepath, "w") as file:
-        file.write(updated_content)
+    write_atomic(css_filepath, updated_content)
     logger.debug(f"Successfully updated border radius in {css_filepath}")
 
 
@@ -1132,8 +1237,7 @@ def generate_includes():
     position = position.strip().strip('"').strip("'") if position else "top"
     includes_data["position"] = position
 
-    with open(includes_file, "w") as file:
-        json.dump(includes_data, file, indent=4)
+    write_atomic(includes_file, json.dumps(includes_data, indent=4))
     logger.debug(
         f"Successfully updated '{includes_file}' with {len(includes)} entries and position '{position}'."
     )
@@ -1141,7 +1245,7 @@ def generate_includes():
 
 def update_config(config_path):
     config_jsonc = os.path.join(str(xdg_config_home()), "waybar", "config.jsonc")
-    shutil.copyfile(config_path, config_jsonc)
+    copy_atomic(config_path, config_jsonc)
     logger.debug(f"Successfully copied config from '{config_path}' to '{config_jsonc}'")
 
 
@@ -1198,6 +1302,7 @@ def watch_waybar():
         logger.debug(f"Launched {UNIT_NAME} with Restart=always")
     else:
         logger.debug("Starting Waybar in watch mode (non-systemd loop)")
+        release_lock()
         while True:
             proc = subprocess.Popen(["waybar"])
             proc.wait()
@@ -1211,6 +1316,8 @@ def main():
     source_env_file(os.path.join(str(xdg_runtime_dir()), "hyde", "environment"))
     source_env_file(os.path.join(str(xdg_state_home()), "hyde", "config"))
 
+    acquire_lock()
+
     if STATE_FILE.exists():
         logger.debug(f"State file found: {STATE_FILE}")
         layout_path = get_state_value("WAYBAR_LAYOUT_PATH")
@@ -1220,22 +1327,23 @@ def main():
             if not CONFIG_JSONC.exists():
                 logger.debug("Config file missing, creating from layout path")
                 CONFIG_JSONC.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copyfile(layout_path, CONFIG_JSONC)
+                copy_atomic(layout_path, CONFIG_JSONC)
                 logger.debug("Created config.jsonc from state file layout")
             else:
                 config_hash = get_file_hash(CONFIG_JSONC)
                 layout_hash = get_file_hash(layout_path)
 
+                # Every run passes through here, so rewrite only on a real difference.
                 if config_hash != layout_hash:
                     logger.debug("Config hash differs from layout hash, creating backup")
                     layout_name = os.path.basename(layout_path).replace(".jsonc", "")
                     backup_layout(layout_name)
 
-                try:
-                    shutil.copyfile(layout_path, CONFIG_JSONC)
-                    logger.debug("Updated config.jsonc with layout from state file")
-                except Exception as e:
-                    logger.error(f"Failed to update config.jsonc: {e}")
+                    try:
+                        copy_atomic(layout_path, CONFIG_JSONC)
+                        logger.debug("Updated config.jsonc with layout from state file")
+                    except Exception as e:
+                        logger.error(f"Failed to update config.jsonc: {e}")
 
         elif layout_path and not os.path.exists(layout_path):
             logger.warning(f"Layout path in state file doesn't exist: {layout_path}")
@@ -1256,7 +1364,7 @@ def main():
                         if get_file_hash(CONFIG_JSONC) != get_file_hash(found_layout):
                             backup_layout(layout_name)
 
-                    shutil.copyfile(found_layout, CONFIG_JSONC)
+                    copy_atomic(found_layout, CONFIG_JSONC)
                     logger.debug("Updated config.jsonc with layout by name")
                 else:
                     logger.error(f"Could not find layout by name: {layout_name}")
@@ -1268,7 +1376,7 @@ def main():
                         set_state_value("WAYBAR_LAYOUT_PATH", first_layout)
                         set_state_value("WAYBAR_LAYOUT_NAME", first_layout_name)
                         CONFIG_JSONC.parent.mkdir(parents=True, exist_ok=True)
-                        shutil.copyfile(first_layout, CONFIG_JSONC)
+                        copy_atomic(first_layout, CONFIG_JSONC)
                         logger.debug(f"Used first available layout: {first_layout}")
         else:
             # No layout path in state file or layout path is empty
@@ -1276,7 +1384,7 @@ def main():
             current_layout = get_current_layout_from_config()
             if current_layout:
                 CONFIG_JSONC.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copyfile(current_layout, CONFIG_JSONC)
+                copy_atomic(current_layout, CONFIG_JSONC)
                 logger.debug(f"Created config.jsonc from determined layout: {current_layout}")
     else:
         logger.debug("State file not found, creating it")

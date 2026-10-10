@@ -10,6 +10,7 @@ Hyprion is an opinionated, independently maintained fork of [HyDE-Project/HyDE](
 4. Run what applies before pushing:
    - `bash -n` on every shell script you touched
    - `lua Scripts/tests/lua/config_toml_test.lua` from the repo root if you touched the Lua config loader
+   - `python3 Scripts/tests/waybar/test_waybar.py` from the repo root if you touched `waybar.py`
    - `Scripts/install.sh -r` on a scratch machine or VM for anything that changes what gets deployed
 5. Open a pull request against `main`.
 
