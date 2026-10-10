@@ -9,6 +9,7 @@ import logging  # noqa: E402
 import sys  # noqa: E402
 import signal  # noqa: E402
 import json  # noqa: E402
+import shlex  # noqa: E402
 import pyutils.logger as logger  # noqa: E402
 from pyutils.xdg_base_dirs import (  # noqa: E402
     xdg_state_home,
@@ -27,6 +28,18 @@ players_data = {}
 current_player = None
 
 
+def shell_value(value: str) -> str:
+    """Decodes one quoted shell word (the env file single-quotes values); anything else keeps the old quote strip."""
+    if value[:1] in ("'", '"'):
+        try:
+            words = shlex.split(value)
+        except ValueError:
+            words = []
+        if len(words) == 1:
+            return words[0]
+    return value.strip('"')
+
+
 def load_env_file(filepath: str) -> None:
     """
     Load environment variables from filepath.
@@ -40,7 +53,7 @@ def load_env_file(filepath: str) -> None:
                     if line.startswith("export "):
                         line = line[len("export ") :]
                     key, value = line.strip().split("=", 1)
-                    os.environ[key] = value.strip('"')
+                    os.environ[key] = shell_value(value)
     except (FileNotFoundError, OSError) as e:
         logger.error(f"Error loading environment file {filepath}: {e}")
 

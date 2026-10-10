@@ -185,6 +185,34 @@ local function is_ignored_key(k, parentKey)
     return false
 end
 
+-- Quotes a config.toml value for the env file, which every hyde-shell call
+-- sources. $NAME and ${NAME} stay expandable (custom_paths = ["$HOME/..."]
+-- relies on it); the rest, $(...) and backticks included, is single-quoted.
+local function shell_word(s)
+    s = tostring(s)
+    local out, from, pos = {}, 1, 1
+    local function literal(text)
+        if text ~= "" then
+            out[#out + 1] = "'" .. text:gsub("'", "'\\''") .. "'"
+        end
+    end
+    while true do
+        local at = s:find("$", pos, true)
+        if not at then
+            break
+        end
+        local ref = s:match("^%$[%a_][%w_]*", at) or s:match("^%${[%a_][%w_]*}", at)
+        if ref then
+            literal(s:sub(from, at - 1))
+            out[#out + 1] = '"' .. ref .. '"'
+            from = at + #ref
+        end
+        pos = at + (ref and #ref or 1)
+    end
+    literal(s:sub(from))
+    return #out > 0 and table.concat(out) or "''"
+end
+
 local function flatten_dict(data, parentKey, result, exportMode)
     for k, v in pairs(data) do
         if is_ignored_key(k, parentKey) then
@@ -201,6 +229,12 @@ local function flatten_dict(data, parentKey, result, exportMode)
         else
             newKey = to_upper(k)
         end
+        -- A quoted TOML key can hold anything, and it lands unquoted before
+        -- the `=`: `export A;cmd=` would run cmd.
+        if not newKey:match("^[%a_][%w_]*$") then
+            logError("Skipping %s: not a valid shell variable name", newKey)
+            goto continue
+        end
 
         local t = type(v)
         if t == "table" then
@@ -216,7 +250,7 @@ local function flatten_dict(data, parentKey, result, exportMode)
             if is_array then
                 local items = {}
                 for i = 1, n do
-                    table.insert(items, string.format('"%s"', tostring(v[i])))
+                    table.insert(items, shell_word(v[i]))
                 end
                 local value = "(" .. table.concat(items, " ") .. ")"
                 if exportMode then
@@ -242,9 +276,9 @@ local function flatten_dict(data, parentKey, result, exportMode)
             end
         else
             if exportMode then
-                table.insert(result, string.format('export %s="%s"', newKey, tostring(v)))
+                table.insert(result, string.format("export %s=%s", newKey, shell_word(v)))
             else
-                table.insert(result, string.format('%s="%s"', newKey, tostring(v)))
+                table.insert(result, string.format("%s=%s", newKey, shell_word(v)))
             end
         end
 

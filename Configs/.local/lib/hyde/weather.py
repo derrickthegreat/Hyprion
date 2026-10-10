@@ -3,6 +3,7 @@
 import os
 import sys
 import json
+import shlex
 from datetime import datetime
 from pathlib import Path
 import locale
@@ -121,6 +122,18 @@ WEATHER_CODES = {
 
 
 ### Functions ###
+def shell_value(value: str) -> str:
+    """Decodes one quoted shell word (the env file single-quotes values); anything else keeps the old quote strip."""
+    if value[:1] in ("'", '"'):
+        try:
+            words = shlex.split(value)
+        except ValueError:
+            words = []
+        if len(words) == 1:
+            return words[0]
+    return value.strip('"')
+
+
 def load_env_file(filepath: Path) -> None:
     """Loads environment variables from a file, ignoring any lines that are empty or start with #."""
     try:
@@ -130,7 +143,7 @@ def load_env_file(filepath: Path) -> None:
                     if line.startswith("export "):
                         line = line[len("export ") :]
                     key, value = line.strip().split("=", 1)
-                    os.environ[key] = value.strip('"')
+                    os.environ[key] = shell_value(value)
     except Exception:
         pass
 

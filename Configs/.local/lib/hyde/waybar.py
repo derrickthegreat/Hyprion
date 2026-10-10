@@ -6,6 +6,7 @@ import glob
 import subprocess
 import re
 import argparse
+import shlex
 import shutil
 import time
 import sys
@@ -195,7 +196,16 @@ def get_config_value(key, default=None):
                 if clean_line.startswith("export "):
                     clean_line = clean_line[7:]  # Remove "export "
                 if clean_line.startswith(f"{key}="):
-                    return clean_line.split("=", 1)[1].strip()
+                    value = clean_line.split("=", 1)[1].strip()
+                    # config.lua single-quotes strings and writes ' as '\''
+                    if value[:1] in ("'", '"'):
+                        try:
+                            words = shlex.split(value)
+                        except ValueError:
+                            words = []
+                        if len(words) == 1:
+                            return words[0]
+                    return value
     return default
 
 

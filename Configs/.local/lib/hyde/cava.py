@@ -50,6 +50,13 @@ class HydeConfig:
                                 # Remove parentheses and split using shlex to respect quotes
                                 value = value[1:-1].strip()
                                 value = shlex.split(value)
+                            elif value[:1] in ("'", '"'):
+                                # One quoted shell word; ' inside it is written '\''
+                                try:
+                                    words = shlex.split(value)
+                                except ValueError:
+                                    words = []
+                                value = words[0] if len(words) == 1 else value.strip("\"'")
                             else:
                                 value = value.strip("\"'")
                             config[key] = value
