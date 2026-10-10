@@ -68,20 +68,50 @@ cat "${CfgLst}" | while read lst; do
     done
 done
 
-[ -d "$HOME/.config/hyde" ] && rm -rf "$HOME/.config/hyde"
-[ -d "$HOME/.cache/hyde" ] && rm -rf "$HOME/.cache/hyde"
-[ -d "$HOME/.local/state/hyde" ] && rm -rf "$HOME/.local/state/hyde"
+# Moves what is left of a HyDE directory into the backup. restore_cfg.lst may
+# already have moved some of its entries there, so it merges instead of nesting.
+backup_rest() {
+    local src="$1"
+    local dst="${BkpDir}${src#"${HOME}"}"
+    local moved=1
+    [ -d "${src}" ] || return 0
+    if [ -e "${dst}" ]; then
+        cp -a -- "${src}/." "${dst}/" && rm -rf -- "${src}" || moved=0
+    else
+        mkdir -p "$(dirname "${dst}")" && mv -- "${src}" "${dst}" || moved=0
+    fi
+    if [ "${moved}" -eq 1 ]; then
+        echo -e "\033[0;34m[removed]\033[0m ${src}"
+    else
+        echo -e "\033[0;31m[kept]\033[0m ${src} could not be moved to the backup, so it was left in place"
+    fi
+}
 
-cat <<"NOTE"
+# The Python and Lua environments are rebuilt by the installer and hold nothing
+# of the user's. config.toml, imported themes and the migration backups (for
+# some, the only copy of their pre-Lua config) go to the backup.
+rm -rf "$HOME/.local/state/hyde/python_env" "$HOME/.local/state/hyde/pip_env" "$HOME/.local/state/hyde/lua_env"
+backup_rest "$HOME/.config/hyde"
+backup_rest "$HOME/.local/state/hyde"
+[ -d "$HOME/.cache/hyde" ] && rm -rf "$HOME/.cache/hyde"
+
+cat <<NOTE
 -------------------------------------------------------
 .: Manual action required to complete uninstallation :.
 -------------------------------------------------------
 
+Everything listed as removed above was moved, not deleted, to
+${BkpDir}
+That includes ~/.config/hyde (config.toml, imported themes) and
+~/.local/state/hyde (state and migration backups). Deleted outright: the cache
+in ~/.cache/hyde and the Python and Lua environments, which the installer
+rebuilds.
+
 Remove HyDE related backups/icons/fonts/themes manually from these paths
-$HOME/.config/cfg_backups               # remove all previous backups
+$HOME/.config/cfg_backups               # this backup and all previous ones
 $HOME/.local/share/fonts                # remove fonts from here
-$HOME/.local/share/icons                # remove fonts from here
-$HOME/.local/share/themes               # remove fonts from here
+$HOME/.local/share/icons                # remove icons from here
+$HOME/.local/share/themes               # remove themes from here
 $HOME/.icons                            # remove icons from here
 $HOME/.themes                           # remove themes from here
 
@@ -91,7 +121,7 @@ Revert back bootloader/pacman/sddm settings manually from these backups
 /boot/grub/grub.hyde.bkp                # restore grub from this backup
 /usr/share/grub/themes                  # remove grub themes from here
 /etc/pacman.conf.hyde.bkp               # restore pacman from this backup
-/etc/sddm.conf.d/kde_settings.hyde.bkp  # restore sddm from this backup
+/etc/sddm.conf.d/the_hyde_project.conf  # remove to revert sddm
 /usr/share/sddm/themes                  # remove sddm themes from here
 
 Uninstall the packages manually that are no longer required based on these list

@@ -283,5 +283,49 @@ class DryRunTests(SandboxTestCase):
         self.assertEqual(self.box.calls("git", "curl"), [])
 
 
+class UninstallTests(SandboxTestCase):
+    def setUp(self):
+        super().setUp()
+        files = {
+            ".config/hyde/config.toml": "[theme]\n",
+            ".config/hyde/themes/Mine/theme.conf": "imported\n",
+            ".config/hyde/wallbash/always/x.dcol": "x\n",
+            ".local/state/hyde/migration/v26.8.2/hyprland.conf": "the only copy\n",
+            ".local/state/hyde/staterc": "state\n",
+            ".local/state/hyde/python_env/bin/python": "",
+            ".local/state/hyde/lua_env/lib/x.so": "",
+            ".cache/hyde/thumbs/a.png": "",
+        }
+        for name, text in files.items():
+            path = self.box.home / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text)
+
+    def test_hyde_directories_are_moved_to_the_backup(self):
+        result = self.box.run([BASH, str(SCRIPTS / "uninstall.sh")], stdin="DONT HYDE\n")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        backups = list((self.box.home / ".config/cfg_backups").glob("*_remove"))
+        self.assertEqual(len(backups), 1)
+        backup = backups[0]
+        self.assertEqual((backup / ".config/hyde/config.toml").read_text(), "[theme]\n")
+        self.assertEqual((backup / ".config/hyde/themes/Mine/theme.conf").read_text(), "imported\n")
+        self.assertTrue((backup / ".config/hyde/wallbash/always/x.dcol").exists())
+        self.assertEqual((backup / ".local/state/hyde/migration/v26.8.2/hyprland.conf").read_text(), "the only copy\n")
+        self.assertEqual((backup / ".local/state/hyde/staterc").read_text(), "state\n")
+        # The environments are rebuilt by the installer, so they are not kept anywhere.
+        self.assertFalse((backup / ".local/state/hyde/python_env").exists())
+        self.assertFalse((backup / ".local/state/hyde/lua_env").exists())
+        for gone in (".config/hyde", ".local/state/hyde", ".cache/hyde"):
+            self.assertFalse((self.box.home / gone).exists(), gone)
+        self.assertIn(str(backup), result.stdout)
+        self.assertIn(f"{SCRIPTS}/pkg_core.lst", result.stdout)
+
+    def test_anything_but_the_phrase_changes_nothing(self):
+        result = self.box.run([BASH, str(SCRIPTS / "uninstall.sh")], stdin="no\n")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue((self.box.home / ".config/hyde/config.toml").exists())
+        self.assertFalse((self.box.home / ".config/cfg_backups").exists())
+
+
 if __name__ == "__main__":
     unittest.main()
