@@ -35,7 +35,7 @@ esac
 
 unit_name="hyde-lockscreen.service"
 args=(-u "$unit_name" -t service)
-if which "$lockscreen.sh" 2> /dev/null 1>&2; then
+if command -v "$lockscreen.sh" >/dev/null 2>&1; then
     printf "Executing $lockscreen wrapper script : %s\n" "$lockscreen.sh"
     app.sh "${args[@]}" -- "$lockscreen.sh" "$@"
 else

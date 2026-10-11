@@ -11,9 +11,8 @@ jobs:
     # Arch, so the tests see the same Lua, Python and Hyprland as an install.
     container: archlinux:latest
     steps:
-      # which comes with base-devel on a real install; hyde-shell needs it.
       - name: Install packages
-        run: pacman -Syu --noconfirm --needed git python lua lua-filesystem which hyprland
+        run: pacman -Syu --noconfirm --needed git python lua lua-filesystem hyprland
 
       - uses: actions/checkout@v5
 

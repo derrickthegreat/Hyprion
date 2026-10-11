@@ -548,7 +548,8 @@ else
     EXECUTABLE="${BASH_SOURCE[0]}"
 fi
 
-BIN_DIR=$(dirname "$(which "${EXECUTABLE:-hyde-shell}")")
+# command -v, not which: which is a separate package (base-devel brings it).
+BIN_DIR=$(dirname "$(command -v "${EXECUTABLE:-hyde-shell}")")
 LIB_DIR=$(realpath "${BIN_DIR}/../lib")
 SHARE_DIR=$(realpath "${BIN_DIR}/../share")
 # Prepend hyde paths to PATH only if not already present
