@@ -69,7 +69,7 @@ local function hyprctl_raw(cmd, DEBUG)
         return ""
     end
     s:shutdown("send")
-    local data, recv_err, partial = s:receive("*a")
+    local data, _, partial = s:receive("*a")
     s:close()
     return data or partial or ""
 end
@@ -126,7 +126,6 @@ function hypr.build_clients_once(DEBUG)
             end
             stableId_to_id[c.stableId] = c.focusHistoryID
         end
-        ::continue::
     end
 
     table.sort(ids)

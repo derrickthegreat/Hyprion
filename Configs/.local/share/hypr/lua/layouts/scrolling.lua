@@ -24,7 +24,7 @@ hl.config(
 
 -- Just Utilizing the default keybinds for Scrolling Layout
 
-_F = {description = "[Scrolling Resize Active Window] resize window right", repeating = true}
+local _F = {description = "[Scrolling Resize Active Window] resize window right", repeating = true}
 hl.bind("ALT + EQUAL", hl.dsp.layout("colresize +conf"), _F)
 hl.bind("ALT + L", hl.dsp.layout("colresize +conf"), _F)
 _F = {description = "[Scrolling Resize Active Window] resize window left", repeating = true}

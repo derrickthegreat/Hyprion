@@ -10,13 +10,6 @@ local floating_window_boundary = function(win)
 	end
 end
 
--- spawns floating windows
-local floating_window_follow_cursor = function(win)
-	if hyde.handle and hyde.handle.float_follow_cursor then
-		hyde.handle.float_follow_cursor(win)
-	end
-end
-
 -- Float mode (hyde-shell floatmode): while it is on, new windows open floating
 -- and are tagged so switching it off can re-tile them
 local float_mode_file = (os.getenv("XDG_RUNTIME_DIR") or "/tmp") .. "/hyde/floatmode"

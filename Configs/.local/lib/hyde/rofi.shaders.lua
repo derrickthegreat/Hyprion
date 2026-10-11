@@ -18,7 +18,7 @@ for i, item in ipairs(sh.list) do
     end
 end
 
-local item, err = sh.select({
+local _, err = sh.select({
     env_prefix = "ROFI_SHADER",
     prioritize = {"00-disable", "disable", "Disable Shader"},
     current_name = current_name,

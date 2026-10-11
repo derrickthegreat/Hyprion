@@ -441,12 +441,12 @@ local function parse_config_files(tomlFile, envFile, hyprFile, hyprEnvFile, expo
         return false
     end
 
-    local tomlContent, err = load_toml_file(tomlFile)
+    local tomlContent = load_toml_file(tomlFile)
     if not tomlContent then
         return false
     end
 
-    local success1, success2, success3 = false, false, false
+    local success1, success2, success3
 
     -- env
     do

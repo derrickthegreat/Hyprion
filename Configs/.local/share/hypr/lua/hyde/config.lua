@@ -53,7 +53,7 @@ local function merge_config(dest, src, opts)
 	for k, v in pairs(src) do
 		if type(v) == "table" and type(dest[k]) == "table" then
 			merge_config(dest[k], v, opts)
-		elseif opts and opts.skip_empty and (v == "" or v == nil) then
+		elseif opts and opts.skip_empty and (v == "" or v == nil) then -- luacheck: ignore 542
 			-- preserve existing destination value when source is empty
 		else
 			dest[k] = v
@@ -72,7 +72,7 @@ end
 setmetatable(
 	hyde.config,
 	{
-		__call = function(t, cfg, opts)
+		__call = function(_, cfg, opts)
 			return hyde.config.apply(cfg, opts)
 		end
 	}
@@ -206,8 +206,8 @@ function hyde.config.load_toml(filename)
 		-- error("TOML parser not available")
 		return -- Silent failure if TOML parser is not available, as this is an optional feature
 	end
-	local ok, data = pcall(toml.parse, filename)
-	if not ok then
+	local parsed, data = pcall(toml.parse, filename)
+	if not parsed then
 		local reason = toml_error_summary(data)
 		local home = os.getenv("HOME")
 		local shown = tostring(filename)

@@ -108,12 +108,6 @@ local function log(msg)
     append_log_file("INFO", formatted)
 end
 
-local function debug(msg)
-    local formatted = string.format("[hyde-altab] %s", tostring(msg))
-    logger.debug("%s", formatted)
-    append_log_file("DEBUG", formatted)
-end
-
 local function module_required()
     local mod = load_api_module()
     if not mod then
@@ -147,10 +141,6 @@ local function which(cmd)
     local r = h:read("*a")
     h:close()
     return r and r:match("%S")
-end
-
-local function shell_escape(s)
-    return "'" .. tostring(s):gsub("'", "'\\''") .. "'"
 end
 
 local function preview_path(stableId, addr)

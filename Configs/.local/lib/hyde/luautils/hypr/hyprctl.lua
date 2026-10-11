@@ -1,6 +1,5 @@
 local socket = require("socket.unix")
 local json = require("dkjson")
-local xdg = require("luautils.xdg")
 
 local M = {}
 
@@ -101,7 +100,7 @@ local function hyprctl_json_cmd(cmd, ...)
     return hyprctl_json(request)
 end
 
-local function wrap_json(fn_name, cmd)
+local function wrap_json(_, cmd)
     return function(...)
         return hyprctl_json_cmd(cmd, ...)
     end
