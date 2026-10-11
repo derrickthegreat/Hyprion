@@ -279,12 +279,16 @@ class DryRunTests(SandboxTestCase):
     def test_post_install_with_sddm_changes_nothing(self):
         (self.box.home / ".oh-my-zsh").mkdir()
         (self.box.home / ".oh-my-zsh/oh-my-zsh.sh").touch()
-        # Where SDDM isn't configured yet it asks for a theme, and global_fn.sh's
-        # set -e ends the script if nothing answers.
-        result = self.script("install_pst.sh", stdin="1\n", INSTALLED="sddm zsh", myShell="zsh")
+        result = self.script("install_pst.sh", INSTALLED="sddm zsh", myShell="zsh")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("Would install the Hyprion session", result.stdout)
         self.assertEqual(self.box.calls("sudo"), [])
+
+    def test_unanswered_sddm_theme_prompt_takes_the_default(self):
+        # HYDE_INSTALL_SDDM asks for the theme even where SDDM is configured.
+        result = self.script("install_pst.sh", INSTALLED="sddm zsh", myShell="zsh", HYDE_INSTALL_SDDM="true")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("sddm configured with Corners theme", result.stdout)
 
     def test_theme_import_creates_nothing(self):
         result = self.script("restore_thm.sh")

@@ -23,7 +23,9 @@ if pkg_installed sddm; then
     if [ ! -f /etc/sddm.conf.d/backup_the_hyde_project.conf ] || [ "${HYDE_INSTALL_SDDM}" = true ]; then
         print_log -g "[DISPLAYMANAGER] " -b " :: " "configuring sddm..."
         print_log -g "[DISPLAYMANAGER] " -b " :: " "Select sddm theme:" -r "\n[1]" -b " Candy" -r "\n[2]" -b " Corners"
-        read -p " :: Enter option number : " -r sddmopt
+        # No answer (no terminal, unattended install) takes the default below
+        # instead of ending the script under global_fn.sh's set -e.
+        read -p " :: Enter option number : " -r sddmopt || sddmopt=""
 
         case $sddmopt in
         1) sddmtheme="Candy" ;;
