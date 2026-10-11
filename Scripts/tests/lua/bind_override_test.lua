@@ -42,6 +42,8 @@ end
 
 -- Binds Hyprland would run, in registration order.
 local live
+-- :remove() calls on an expired handle. Hyprland segfaults on the first one.
+local expired_removes
 
 local function drop(entry)
 	for i = #live, 1, -1 do
@@ -54,10 +56,12 @@ end
 
 -- Models Hyprland 0.56.2: every bind on a combo fires, hl.unbind(combo) drops
 -- all of them, and the handle hl.bind returns removes only its own bind, then
--- prints as expired. "none" (no handle) and "inert" (a remove that never
--- takes) exercise the hl.unbind fallback in hyde/binds.lua.
+-- prints as expired. :remove() on an expired handle, including one that
+-- hl.unbind expired, crashes Hyprland. "none" (no handle) and "inert" (a
+-- remove that never takes) exercise the hl.unbind fallback in hyde/binds.lua.
 local function fresh(handles)
 	live = {}
+	expired_removes = 0
 	local noop = function()
 	end
 	_G.hl = {dsp = dsp_proxy(""), on = noop, monitor = noop, config = noop, window_rule = noop}
@@ -70,7 +74,9 @@ local function fresh(handles)
 		return setmetatable({}, {
 			__index = {
 				remove = function()
-					if handles == "handle" then
+					if entry.expired then
+						expired_removes = expired_removes + 1
+					elseif handles == "handle" then
 						drop(entry)
 					end
 				end
@@ -155,6 +161,12 @@ for _, mode in ipairs({"handle", "none", "inert"}) do
 	user_override()
 	expect_only(mode .. ", override run twice", "F10", VOL .. "'d'")
 	check(mode .. ", override run twice: bind count unchanged", #live, stock_count + 1)
+
+	-- hl.unbind expires the stock handle, so rebinding must not remove it again.
+	hl.unbind("SUPER + S")
+	hl.bind("SUPER + S", hl.dsp.exec_cmd("user-s"))
+	expect_only(mode .. ", unbind then rebind", "SUPER + S", "user-s")
+	check(mode .. ": no remove() on an expired handle", expired_removes, 0)
 end
 
 -- 2. A bind that fires on another event is added next to the stock one, and
@@ -187,6 +199,7 @@ expect_only("example", "F11", VOL .. "'i'")
 check("example: F12 is unbound", #commands_on("F12"), 0)
 expect_only("example", "SUPER + S", "workspace.toggle_special")
 expect_only("example", "SUPER + P", "hyde-shell screenshot s")
+check("example: no remove() on an expired handle", expired_removes, 0)
 
 if failures > 0 then
 	io.stderr:write(failures .. " failure(s)\n")

@@ -198,21 +198,31 @@ hyde.binds.canonicalize = canonicalize
 -- exact string it was registered with, which hl.unbind needs to match.
 hyde.binds._active = hyde.binds._active or {}
 
+local function is_expired(handle)
+    return tostring(handle):find("(expired)", 1, true) ~= nil
+end
+
 -- Removing through the handle drops just this bind, after which Hyprland prints
 -- it as "HL.Keybind(expired)". Otherwise fall back to hl.unbind(combo), which
 -- also drops any other bind on the combo, such as a release bind.
 local function remove_bind(registered)
     local handle = registered.handle
     if handle ~= nil then
+        -- An hl.unbind() in the user's config expires the handle, and :remove()
+        -- on an expired handle segfaults Hyprland, which pcall can't catch.
+        if is_expired(handle) then
+            return
+        end
         pcall(
             function()
                 handle:remove()
             end
         )
+        if is_expired(handle) then
+            return
+        end
     end
-    if not tostring(handle):find("(expired)", 1, true) then
-        hl.unbind(registered.combo)
-    end
+    hl.unbind(registered.combo)
 end
 
 -- Resolves __lua binds back to a launchable command for the keybind-hint
