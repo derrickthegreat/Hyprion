@@ -1,0 +1,4 @@
+# HyDE scripts get most of their variables by sourcing globalcontrol.sh and
+# friends at run time, through paths shellcheck can't follow. "Can't follow
+# this source" and "referenced but not assigned" are noise here.
+disable=SC1090,SC1091,SC2154

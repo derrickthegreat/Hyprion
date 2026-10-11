@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Sourced by the fake commands in shims/. UPDATE_FIXTURE picks a directory
 # under fixtures/; each file there is the canned output of one command.
 fixture="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/fixtures/${UPDATE_FIXTURE:-busy}"

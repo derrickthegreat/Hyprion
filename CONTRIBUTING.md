@@ -9,6 +9,7 @@ Hyprion is an opinionated, independently maintained fork of [HyDE-Project/HyDE](
 3. If the change is visible to a user, add a line under `## Unreleased` in `CHANGELOG.md`. Describe what the user sees, not how the code changed.
 4. Run what applies before pushing:
    - `Scripts/tests/run.sh`, which runs every suite under `Scripts/tests/`. CI runs it on every push and pull request, in an Arch container with Hyprland installed. Locally, the Hyprland config check is skipped if Hyprland isn't installed.
+   - `Scripts/tests/lint.sh` if you have `shellcheck` and `luacheck` installed. CI runs it on every push: shellcheck on every shell script (warnings, errors and unquoted expansions; `.shellcheckrc`) and luacheck on every Lua file (`.luacheckrc`). It also runs the pre-commit hooks on the files a push changes; `pre-commit install` runs them on each commit locally.
    - `bash -n` on every shell script you touched
    - `Scripts/install.sh -r` on a scratch machine or VM for anything that changes what gets deployed
    - If you change how HyDE's Lua handles binds or other user config, add a user config to `Scripts/tests/hyprland/fixtures/` that does what you're worried about. Each fixture is loaded by the real `Hyprland --verify-config`, which catches crashes the stubbed Lua tests can't.

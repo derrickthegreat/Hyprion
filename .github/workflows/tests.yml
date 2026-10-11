@@ -30,3 +30,38 @@ jobs:
           useradd --create-home tester
           chown -R tester "$GITHUB_WORKSPACE"
           runuser -u tester -- Scripts/tests/run.sh
+
+  lint:
+    name: shellcheck, luacheck and pre-commit
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      # nodejs and npm are for pre-commit's markdownlint hook.
+      - name: Install packages
+        run: pacman -Syu --noconfirm --needed git shellcheck luacheck pre-commit nodejs npm
+
+      # Full history, so pre-commit can diff against the commit before the push.
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Report versions
+        run: pacman -Q shellcheck luacheck pre-commit nodejs
+
+      # The workspace belongs to the runner, not to root in the container.
+      - name: Trust the checkout
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: shellcheck and luacheck on every file
+        run: Scripts/tests/lint.sh
+
+      # Whitespace, file endings, large files, JSON/YAML/TOML/XML and markdownlint
+      # check only what this push or pull request changes, so the inherited tree
+      # doesn't have to be rewritten first. lint.sh already ran luacheck.
+      - name: pre-commit on changed files
+        env:
+          FROM_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          from="${FROM_REF}"
+          git cat-file -e "${from}^{commit}" 2>/dev/null || from=HEAD~1
+          SKIP=luacheck pre-commit run --show-diff-on-failure --from-ref "${from}" --to-ref HEAD
