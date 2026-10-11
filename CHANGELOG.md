@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Branding: the fork is now called Hyprion and lives at `github.com/derrickthegreat/Hyprion`. The README, installer banner, Waybar GitHub button, config schema URL and update instructions use the new name and repo. `hyde-shell`, `~/.config/hyde` and the `HYDE_*` variables keep their names
 - Docs: the README, KEYBINDINGS and their translations show the installer's ASCII banner instead of `hyde_banner.png`, which still read HYDE. The README no longer carries upstream's all-contributors badge and table, and `.all-contributorsrc` is gone; upstream's contributors are still credited in `CONTRIBUTORS.md`
 - Scripts: refactor hyde-shell open to use config.toml , mime . --fallback resolution handling.
+- Scripts: `Scripts/restore_cfg.sh` is gone. Nothing has run it since restores moved to deez, and the one job it still did, recording which checkout was installed, is now part of the restore
 
 
 ### Fixed
@@ -90,6 +91,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Hypridle: use Lua DPMS dispatchers so idle screen-off and resume work with the Hyprland Lua config parser
 - Theme import: `theme.import.py`'s fzf preview no longer crashes with an `AttributeError` when previewing a theme name that isn't in the cached gallery data
 - Theme: `theme.switch.sh` now logs `hyq`'s own error output to `~/.cache/hyde/logs/theme.switch.sh.log` when it fails to dump `hypr.theme` to Lua, instead of discarding it; the generic "could not dump hypr.theme" message previously left no way to tell why, and this runtime script has no log file at all otherwise since it never goes through install.sh's `HYDE_LOG` (#2098)
+- Shell: `hyde-shell version` names the checkout you installed. Nothing had refreshed that record since restores moved to deez, so it kept naming whatever was installed before; the restore now writes it after deploying
+- Shell: `hyde-shell` and the lock screen no longer need the `which` package, which only base-devel brings in
+- Installer: an unattended install no longer stops at the SDDM theme question. With nobody to answer it, the post-install ended there; it now takes the default theme
+- Scripts: values that were split on spaces are now quoted: the state file the clipboard and screenshot scripts load, the Firefox archives the app restore unpacks, the GTK and icon theme in the Flatpak overrides, and the waydeeper model name. shellcheck, which CI now runs, found them
 
 ## v26.08.21
 
