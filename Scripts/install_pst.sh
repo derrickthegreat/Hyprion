@@ -18,7 +18,7 @@ flg_DryRun=${flg_DryRun:-0}
 if pkg_installed sddm; then
     print_log -c "[DISPLAYMANAGER] " -b "detected :: " "sddm"
     if [ ! -d /etc/sddm.conf.d ]; then
-        [ ${flg_DryRun} -eq 1 ] || sudo mkdir -p /etc/sddm.conf.d
+        [ "${flg_DryRun}" -eq 1 ] || sudo mkdir -p /etc/sddm.conf.d
     fi
     if [ ! -f /etc/sddm.conf.d/backup_the_hyde_project.conf ] || [ "${HYDE_INSTALL_SDDM}" = true ]; then
         print_log -g "[DISPLAYMANAGER] " -b " :: " "configuring sddm..."
@@ -45,7 +45,7 @@ if pkg_installed sddm; then
     fi
 
     if [ ! -f "/usr/share/sddm/faces/${USER}.face.icon" ] && [ -f "${cloneDir}/Source/misc/${USER}.face.icon" ]; then
-        [ ${flg_DryRun} -eq 1 ] || sudo cp "${cloneDir}/Source/misc/${USER}.face.icon" /usr/share/sddm/faces/
+        [ "${flg_DryRun}" -eq 1 ] || sudo cp "${cloneDir}/Source/misc/${USER}.face.icon" /usr/share/sddm/faces/
         print_log -g "[DISPLAYMANAGER] " -b " :: " "avatar set for ${USER}..."
     fi
 
@@ -58,7 +58,7 @@ fi
 # dolphin
 if pkg_installed dolphin && pkg_installed xdg-utils; then
     print_log -c "[FILEMANAGER] " -b "detected :: " "dolphin"
-    if [ ${flg_DryRun} -eq 1 ]; then
+    if [ "${flg_DryRun}" -eq 1 ]; then
         print_log -y "[FILEMANAGER] " -b "dry-run :: " "Would set org.kde.dolphin.desktop as default file explorer"
     else
         xdg-mime default org.kde.dolphin.desktop inode/directory
@@ -83,7 +83,7 @@ if pkg_installed flatpak; then
 
     if [ "${fpkopt}" = "y" ]; then
         print_log -g "[FLATPAK]" -b " install :: " "flatpaks"
-        [ ${flg_DryRun} -eq 1 ] || "${scrDir}/extra/install_fpk.sh"
+        [ "${flg_DryRun}" -eq 1 ] || "${scrDir}/extra/install_fpk.sh"
     else
         print_log -y "[FLATPAK]" -b " skip :: " "flatpak installation"
     fi

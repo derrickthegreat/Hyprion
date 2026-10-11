@@ -118,7 +118,6 @@ deploy_psv() {
         done
     done < "$1"
 }
-log_section="deploy"
 flg_DryRun=${flg_DryRun:-0}
 scrDir=$(dirname "$(realpath "$0")")
 if ! source "$scrDir/globalcontrol.sh"; then

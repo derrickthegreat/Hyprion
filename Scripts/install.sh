@@ -144,6 +144,7 @@ fi
 #--------------------
 has_operation() {
 	local op="$1"
+	# shellcheck disable=SC2076 # a literal match: operation names aren't regexes
 	[[ " ${operations[*]} " =~ " ${op} " ]]
 }
 

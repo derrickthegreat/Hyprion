@@ -48,19 +48,13 @@ polkit=(
 )
 
 
-executed=false
-
 # Loop through the list of paths
 for file in "${polkit[@]}"; do
   if [ -e "$file" ] && [ ! -d "$file" ]; then
     echo "Found: $file — executing..."
     exec "$file"
-    executed=true
-    break
   fi
 done
 
-# Fallback message if nothing executed
-if [ "$executed" == false ]; then
-  echo "No valid Polkit agent found. Please install one."
-fi
+# Only reached when no agent was found: exec doesn't return.
+echo "No valid Polkit agent found. Please install one."

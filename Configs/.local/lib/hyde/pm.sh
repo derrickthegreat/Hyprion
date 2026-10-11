@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2064 # each trap takes its temp file's path when it is set
 set -eu
 export LC_ALL=C
 # How the user invoked us, for usage text: "hyde-shell pm.sh" or "pm.sh", never a full path.
@@ -352,6 +353,7 @@ aur_helpers_info() {
     printf "\e[1mDescription :\e[0m AUR helper\n"
 }
 aur_helpers_list() {
+    # shellcheck disable=SC2086 # AUR_HELPERS is a list, split on purpose
     printf "%s aur\n" $AUR_HELPERS
 }
 paru_install() {

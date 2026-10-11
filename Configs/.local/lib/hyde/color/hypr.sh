@@ -29,9 +29,9 @@ load_hypr_vars() {
         [[ -n ${value} ]] && printf -v "__$name" '%s' "${value}"
     done
 }
-__GTK_THEME= __COLOR_SCHEME= __ICON_THEME= __CURSOR_THEME= __CURSOR_SIZE=
-__FONT= __FONT_SIZE= __DOCUMENT_FONT= __DOCUMENT_FONT_SIZE=
-__MONOSPACE_FONT= __MONOSPACE_FONT_SIZE= __CODE_THEME=
+__GTK_THEME='' __COLOR_SCHEME='' __ICON_THEME='' __CURSOR_THEME='' __CURSOR_SIZE=''
+__FONT='' __FONT_SIZE='' __DOCUMENT_FONT='' __DOCUMENT_FONT_SIZE=''
+__MONOSPACE_FONT='' __MONOSPACE_FONT_SIZE='' __CODE_THEME=''
 load_hypr_vars "$HYDE_THEME_DIR/hypr.theme"
 
 # The user's [hyprland] overrides from config.toml (converted into the state

@@ -29,6 +29,7 @@ if [[ ! " $* " =~ " --startup " ]]; then
 fi
 detect() {
     card=$(echo "$AQ_DRM_DEVICES" | cut -d':' -f1 | cut -d'/' -f4)
+    # shellcheck disable=SC2010 # reads by-path link targets; the names have no spaces
     slot_number=$(ls -l /dev/dri/by-path/ | grep "$card" | awk -F'pci-0000:|-card' '{print $2}')
     vendor_id=$(lspci -nn -s "$slot_number")
     declare -A vendors=(["10de"]="nvidia" ["8086"]="intel" ["1002"]="amd")
@@ -135,7 +136,7 @@ map_floor() {
             return
         fi
     done
-    [ -n "$def_val" ] && echo $def_val || echo " "
+    [ -n "$def_val" ] && echo "$def_val" || echo " "
 }
 
 generate_json() {

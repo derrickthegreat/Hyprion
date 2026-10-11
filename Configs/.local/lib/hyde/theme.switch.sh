@@ -98,6 +98,7 @@ while getopts "qnps:" option; do
         ;;
     esac
 done
+# shellcheck disable=SC2076 # a literal match: theme names aren't regexes
 [[ ! " ${thmList[*]} " =~ " $themeSet " ]] && themeSet="$HYDE_THEME"
 set_conf "HYDE_THEME" "$themeSet"
 print_log -sec "theme" -stat "apply" "$themeSet"

@@ -29,14 +29,14 @@ if [ "${myShell}" = "zsh" ] && pkg_installed zsh; then
         if ! pkg_installed oh-my-zsh-git; then
             if [[ ! -e "$HOME/.oh-my-zsh/oh-my-zsh.sh" ]]; then
                 print_log -sec "SHELL" -stat "cloning" "oh-my-zsh"
-                [ ${flg_DryRun} -eq 1 ] || if ! sh -c "$(curl -fsSL https://install.ohmyz.sh/)" "" --unattended --keep-zshrc; then
+                [ "${flg_DryRun}" -eq 1 ] || if ! sh -c "$(curl -fsSL https://install.ohmyz.sh/)" "" --unattended --keep-zshrc; then
                     print_log -err "oh-my-zsh update failed..." "Please resolve this issue manually LATER ..."
                     print_log -warn "Continuing" "with existing oh-my-zsh..."
                     exit 0
                 fi
             else
                 print_log -sec "SHELL" -stat "updating" "oh-my-zsh"
-                [ ${flg_DryRun} -eq 1 ] || zsh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/upgrade.sh)"
+                [ "${flg_DryRun}" -eq 1 ] || zsh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/upgrade.sh)"
             fi
         fi
     fi
@@ -99,7 +99,7 @@ elif ! shell_listed "${shellPath}"; then
     print_log -sec "SHELL" -err "error" "${shellPath} is not listed in /etc/shells, leaving the login shell alone..."
 elif [[ "$(login_shell)" != "${myShell}" ]]; then
     print_log -sec "SHELL" -stat "change" "shell to ${myShell}..."
-    [ ${flg_DryRun} -eq 1 ] || chsh -s "${shellPath}"
+    [ "${flg_DryRun}" -eq 1 ] || chsh -s "${shellPath}"
 else
     print_log -sec "SHELL" -stat "exist" "${myShell} is already set as shell..."
 fi

@@ -301,7 +301,7 @@ function has_qemu_display_override() {
                 ;;
             -device)
                 case "$next" in
-                    *vga*|*gpu*|virtio-gpu*) return 0 ;;
+                    *vga*|*gpu*) return 0 ;;
                 esac
                 ;;
         esac
@@ -362,7 +362,7 @@ function run_qemu_vm() {
         # Always add network adapter for SSH access and HTTP server reachability
         # Use extra_args if provided (e.g. for SSH forwarding), otherwise default to SSH forwarding
         local net_args="${extra_args:-hostfwd=tcp::2222-:22}"
-        qemu_args+=(-device virtio-net,netdev=net0 -netdev "user,id=net0,$net_args")
+        qemu_args+=(-device "virtio-net,netdev=net0" -netdev "user,id=net0,$net_args")
 
         # Add 9p shared folder mount if --mount was specified
         if [ -n "$mount_path" ]; then

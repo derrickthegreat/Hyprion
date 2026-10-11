@@ -2,6 +2,7 @@
 # Bash completion for hyde-shell
 
 _hyde_shell_completion() {
+    # shellcheck disable=SC2034 # _init_completion sets all four
     local cur prev words cword
     COMPREPLY=()
     _init_completion -n ":" 2>/dev/null || {
@@ -31,26 +32,26 @@ print(os.path.realpath(os.path.join(os.path.dirname(bin_path), '..', 'lib', 'hyd
     }
 
     if [[ $cword -eq 1 ]]; then
-        COMPREPLY=($(compgen -W "$(__hyde_shell_run --list-all)" -- "$cur"))
+        mapfile -t COMPREPLY < <(compgen -W "$(__hyde_shell_run --list-all)" -- "$cur")
         return 0
     fi
 
     if [[ $cword -eq 2 ]]; then
         case "$prev" in
             wallbash)
-                COMPREPLY=($(compgen -W "$(__hyde_shell_run --list-script)" -- "$cur"))
+                mapfile -t COMPREPLY < <(compgen -W "$(__hyde_shell_run --list-script)" -- "$cur")
                 return 0
                 ;;
             completion|completions)
                 local subs="--list-builtins --list-script --list-script-path --list-all bash zsh fish --help"
-                COMPREPLY=($(compgen -W "$subs" -- "$cur"))
+                mapfile -t COMPREPLY < <(compgen -W "$subs" -- "$cur")
                 return 0
                 ;;
             *)
                 local script_cmds
                 script_cmds=$(__hyde_shell_run --list-commands "$prev")
                 if [[ -n "$script_cmds" ]]; then
-                    COMPREPLY=($(compgen -W "$script_cmds" -- "$cur"))
+                    mapfile -t COMPREPLY < <(compgen -W "$script_cmds" -- "$cur")
                     return 0
                 fi
                 ;;
@@ -67,7 +68,7 @@ print(os.path.realpath(os.path.join(os.path.dirname(bin_path), '..', 'lib', 'hyd
         flags=$(__hyde_shell_run --list-flags "$cmd" "$subcmd")
         local all="$opts $flags"
         if [[ -n "$all" ]]; then
-            COMPREPLY=($(compgen -W "$all" -- "$cur"))
+            mapfile -t COMPREPLY < <(compgen -W "$all" -- "$cur")
             return 0
         fi
     fi

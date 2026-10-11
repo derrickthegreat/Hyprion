@@ -30,7 +30,7 @@ if [ "${flg_Grub}" -eq 1 ] && pkg_installed grub && [ -f /boot/grub/grub.cfg ]; 
 
         # Only if the nvidia installation doesn't skip
         if nvidia_detect; then
-            if [ ${flg_Nvidia} -eq 1 ]; then
+            if [ "${flg_Nvidia}" -eq 1 ]; then
                 print_log -g "[BOOTLOADER] " -b "configure :: " "nvidia detected, adding nvidia_drm.modeset=1 to boot option..."
                 gcld=$(grep "^GRUB_CMDLINE_LINUX_DEFAULT=" "/etc/default/grub" | cut -d'"' -f2 | sed 's/\b nvidia_drm.modeset=.\b//g')
                 [ "${flg_DryRun}" -eq 1 ] || sudo sed -i "/^GRUB_CMDLINE_LINUX_DEFAULT=/c\GRUB_CMDLINE_LINUX_DEFAULT=\"${gcld} nvidia_drm.modeset=1\"" /etc/default/grub

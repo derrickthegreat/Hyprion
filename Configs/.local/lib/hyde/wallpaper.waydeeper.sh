@@ -38,7 +38,7 @@ if [ -n "$WALLPAPER_WAYDEEPER_MODEL" ]; then
     # Ensure selected model is downloaded
     if [ ! -f "$XDG_DATA_HOME/waydeeper/models/$WALLPAPER_WAYDEEPER_MODEL.onnx" ] && [ ! -f "$HOME/.local/share/waydeeper/models/$WALLPAPER_WAYDEEPER_MODEL.onnx" ]; then
         print_log -sec "wallpaper" -stat "downloading $WALLPAPER_WAYDEEPER_MODEL model"
-        if ! waydeeper download-model $WALLPAPER_WAYDEEPER_MODEL; then
+        if ! waydeeper download-model "$WALLPAPER_WAYDEEPER_MODEL"; then
             print_log -err "failed to download waydeeper $WALLPAPER_WAYDEEPER_MODEL model"
             notify-send -a "HyDE Alert" "ERROR: failed to download waydeeper $WALLPAPER_WAYDEEPER_MODEL model"
             exit 1

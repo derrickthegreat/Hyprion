@@ -227,6 +227,7 @@ get_hashmap() {
         done
     fi
 }
+# shellcheck disable=SC2120 # --verbose is optional, and no caller here passes it
 get_themes() {
     unset thmSortS
     unset thmListS
@@ -320,6 +321,7 @@ pkg_installed() {
         return 1
     fi
 }
+# shellcheck disable=SC2034 # sets aurhlpr for the caller
 get_aurhlpr() {
     if pkg_installed yay; then
         aurhlpr="yay"
@@ -548,7 +550,7 @@ fit_wallpaper() {
     fi
     local scr_w scr_h img_w img_h
     read -r scr_w scr_h < <(get_screen_geometry)
-    read -r img_w img_h < <(magick identify -format '%w %h' "$image[0]" 2>/dev/null)
+    read -r img_w img_h < <(magick identify -format '%w %h' "${image}[0]" 2>/dev/null)
     # No ImageMagick, an unreadable image, or an animation we would freeze:
     # hand it back and let the backend crop as it always did.
     if [[ ! $img_w =~ ^[0-9]+$ ]] || [[ ! $img_h =~ ^[0-9]+$ ]] ||
@@ -582,13 +584,14 @@ fit_wallpaper() {
                  z = f / (1 - b / 100); if (z > s) z = s
                  printf "%d %d\n", iw * z + 0.5, ih * z + 0.5 }')
     local cache_dir="$HYDE_CACHE_HOME/wallpapers/ambient"
-    local cached="$cache_dir/$(set_hash "$image")-${scr_w}x${scr_h}-${blur}-${dim}-${budget}.jpg"
+    local cached
+    cached="$cache_dir/$(set_hash "$image")-${scr_w}x${scr_h}-${blur}-${dim}-${budget}.jpg"
     if [ ! -s "$cached" ]; then
         mkdir -p "$cache_dir"
         # The backdrop is blurred at an eighth scale and stretched back up: a
         # radius-12 blur on a thumbnail is indistinguishable from a radius-96
         # blur on the full canvas and finishes in a fraction of the time.
-        if ! magick "$image[0]" \
+        if ! magick "${image}[0]" \
             \( -clone 0 -resize "$((scr_w / 8))x$((scr_h / 8))^" -gravity center \
             -extent "$((scr_w / 8))x$((scr_h / 8))" -blur "0x${blur}" \
             -brightness-contrast "${dim}x-20" -resize "${scr_w}x${scr_h}!" \) \

@@ -11,8 +11,6 @@ ocr_extract() {
     tesseract_packages=("${tesseract_languages[@]/#/$tesseract_package_prefix}")
     tesseract_packages+=("tesseract")
 
-    echo $tesseract_languages $SCREENSHOT_OCR_TESSERACT_LANGUAGES
-
     for pkg in "${tesseract_packages[@]}"; do
         if ! pkg_installed "$pkg"; then
             notify-send -a "HyDE Alert" -h string:x-canonical-private-synchronous:hyde.ocr -e -i "dialog-error" \

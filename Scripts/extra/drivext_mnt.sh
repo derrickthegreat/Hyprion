@@ -15,7 +15,7 @@ while read -r fst uuid name; do
     elif [ "${mount}" == "/home" ] && [ -z "${label}" ]; then
         sudo e2label "${name}" "9S"
 
-    elif [ -z "${mount}" ] && [ ! -z "${label}" ] && [ $(grep "${uuid}" /etc/fstab | wc -l) -eq 0 ]; then
+    elif [ -z "${mount}" ] && [ ! -z "${label}" ] && [ "$(grep "${uuid}" /etc/fstab | wc -l)" -eq 0 ]; then
         [ ! -d "/mnt/${label}" ] && sudo mkdir -p "/mnt/${label}"
         fstEntry=$(echo -e "${fstEntry}\n#/${name}\nUUID=${uuid}    /mnt/${label}    ${fst}    nosuid,nodev,nofail,x-gvfs-show    0  0\n ")
         sudo mount "${name}" "/mnt/${label}"
