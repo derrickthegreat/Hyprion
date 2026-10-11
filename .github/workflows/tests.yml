@@ -15,7 +15,7 @@ jobs:
       - name: Install packages
         run: pacman -Syu --noconfirm --needed git python lua lua-filesystem which hyprland
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Report versions
         run: pacman -Q hyprland lua lua-filesystem python
