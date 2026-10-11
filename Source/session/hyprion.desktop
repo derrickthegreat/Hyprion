@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Hyprion
+Comment=Hyprland, starting in safe mode instead of failing when the config doesn't load
+Exec=/usr/local/bin/hyprion-session
+Type=Application
+DesktopNames=Hyprland
+Keywords=tiling;wayland;compositor;

@@ -276,11 +276,38 @@ class DryRunTests(SandboxTestCase):
         self.assertIn("Would set org.kde.dolphin.desktop", result.stdout)
         self.assertEqual(self.box.calls("xdg-mime", "zsh", "curl", "chsh", "git", "sudo"), [])
 
+    def test_post_install_with_sddm_changes_nothing(self):
+        (self.box.home / ".oh-my-zsh").mkdir()
+        (self.box.home / ".oh-my-zsh/oh-my-zsh.sh").touch()
+        # Where SDDM isn't configured yet it asks for a theme, and global_fn.sh's
+        # set -e ends the script if nothing answers.
+        result = self.script("install_pst.sh", stdin="1\n", INSTALLED="sddm zsh", myShell="zsh")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("Would install the Hyprion session", result.stdout)
+        self.assertEqual(self.box.calls("sudo"), [])
+
     def test_theme_import_creates_nothing(self):
         result = self.script("restore_thm.sh")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertFalse((self.box.home / ".config/hyde").exists())
         self.assertEqual(self.box.calls("git", "curl"), [])
+
+
+class SessionInstallTests(SandboxTestCase):
+    def test_installs_the_hyprion_session(self):
+        result = self.box.run([BASH, str(SCRIPTS / "install_session.sh")])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        source = SCRIPTS.parent / "Source/session"
+        sudo = self.box.calls("sudo")
+        self.assertIn(f"sudo install -Dm755 {source}/hyprion-session /usr/local/bin/hyprion-session", sudo)
+        self.assertIn(f"sudo install -Dm644 {source}/hyprion.desktop "
+                      "/usr/local/share/wayland-sessions/hyprion.desktop", sudo)
+
+    def test_a_failed_install_says_so(self):
+        self.box.stub("sudo", "exit 1")
+        result = self.box.run([BASH, str(SCRIPTS / "install_session.sh")])
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("Could not install the Hyprion session", result.stdout + result.stderr)
 
 
 class UninstallTests(SandboxTestCase):

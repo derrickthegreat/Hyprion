@@ -1,0 +1,10 @@
+#!/bin/sh
+# SDDM's entry point for the Hyprion session, installed to /usr/local/bin.
+# The logic lives in ~/.local/lib/hyde/session.sh so updates reach it with
+# the rest of HyDE. If that is missing or doesn't parse, Hyprland starts the
+# stock way, as the plain Hyprland session would.
+session="${HOME}/.local/lib/hyde/session.sh"
+if [ -x "${session}" ] && bash -n "${session}" 2>/dev/null; then
+    exec "${session}" "$@"
+fi
+exec "${HYPRION_START_HYPRLAND:-/usr/bin/start-hyprland}" "$@"

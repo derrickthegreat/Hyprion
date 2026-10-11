@@ -37,4 +37,5 @@ Their CI, release promotion scripts and the `tests` submodule were removed from 
 - `Configs/` is what gets deployed into `$HOME`. HyDE's own Hyprland config is under `Configs/.local/share/hypr/lua/` and is overwritten on every deploy.
 - `Configs/.config/hypr/hyprland.lua` is the user's override file. It is deployed only when absent and never overwritten. A fuller example lives at `Source/examples/hyprland.lua`.
 - `Scripts/dots/*.toml` are the deez-dots manifests that decide which files are synced, preserved or ignored.
+- `Source/session/` is the SDDM session (`hyprion-session` and its `.desktop` entry) that `Scripts/install_session.sh` installs system-wide. It runs `Configs/.local/lib/hyde/session.sh`, which is deployed with the rest of HyDE.
 - `Scripts/tests/` holds this fork's tests.

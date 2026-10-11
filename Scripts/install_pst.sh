@@ -47,6 +47,8 @@ if pkg_installed sddm; then
         print_log -g "[DISPLAYMANAGER] " -b " :: " "avatar set for ${USER}..."
     fi
 
+    "${scrDir}/install_session.sh"
+
 else
     print_log -y "[DISPLAYMANAGER] " -b " :: " "sddm is not installed..."
 fi
