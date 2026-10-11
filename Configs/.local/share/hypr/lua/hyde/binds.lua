@@ -290,6 +290,22 @@ hl.bind = function(keycombo, action, ...)
     return handle
 end
 
+-- hl.unbind drops every bind on the combo and expires their handles, so forget
+-- them here too: a later bind on the combo then has nothing stale to remove.
+-- remove_bind's expired check stays as the second guard.
+local orig_unbind = hl.unbind
+if is_callable(orig_unbind) then
+    hl.unbind = function(keycombo, ...)
+        local prefix = canonicalize(keycombo) .. "|"
+        for id in pairs(hyde.binds._active) do
+            if id:sub(1, #prefix) == prefix then
+                hyde.binds._active[id] = nil
+            end
+        end
+        return orig_unbind(keycombo, ...)
+    end
+end
+
 -- Written once per full config (re)load, not per-bind: hl.bind() runs on the
 -- order of seventy times in a row during one load, and hint-hyprland.py only
 -- ever reads this after a load has already finished, so only the state after

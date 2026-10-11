@@ -144,6 +144,18 @@ local function user_override()
 	hl.bind("super+control+b", hl.dsp.exec_cmd("user-b"), {locked = true, transparent = true})
 end
 
+-- Binds HyDE still tracks on a combo, whatever event they fire on.
+local function active_on(combo)
+	local prefix = hyde.binds.canonicalize(combo) .. "|"
+	local n = 0
+	for id in pairs(hyde.binds._active) do
+		if id:sub(1, #prefix) == prefix then
+			n = n + 1
+		end
+	end
+	return n
+end
+
 -- 1. Overrides replace the stock bind whatever its flags; untouched stock binds stay.
 for _, mode in ipairs({"handle", "none", "inert"}) do
 	fresh(mode)
@@ -162,8 +174,10 @@ for _, mode in ipairs({"handle", "none", "inert"}) do
 	expect_only(mode .. ", override run twice", "F10", VOL .. "'d'")
 	check(mode .. ", override run twice: bind count unchanged", #live, stock_count + 1)
 
-	-- hl.unbind expires the stock handle, so rebinding must not remove it again.
+	-- hl.unbind expires the stock handle, so HyDE forgets it and rebinding
+	-- must not remove it again.
 	hl.unbind("SUPER + S")
+	check(mode .. ": unbind forgets the stock bind", active_on("SUPER + S"), 0)
 	hl.bind("SUPER + S", hl.dsp.exec_cmd("user-s"))
 	expect_only(mode .. ", unbind then rebind", "SUPER + S", "user-s")
 	check(mode .. ": no remove() on an expired handle", expired_removes, 0)
