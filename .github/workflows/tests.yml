@@ -1,0 +1,33 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    name: Test suites and Hyprland config check
+    runs-on: ubuntu-latest
+    # Arch, so the tests see the same Lua, Python and Hyprland as an install.
+    container: archlinux:latest
+    steps:
+      # which comes with base-devel on a real install; hyde-shell needs it.
+      - name: Install packages
+        run: pacman -Syu --noconfirm --needed git python lua lua-filesystem which hyprland
+
+      - uses: actions/checkout@v4
+
+      - name: Report versions
+        run: pacman -Q hyprland lua lua-filesystem python
+
+      # sddm is a core package; the SDDM archive test needs only its root-owned
+      # theme directory, so the theme install takes the root path.
+      - name: Create the SDDM theme directory
+        run: mkdir -p /usr/share/sddm/themes
+
+      # Hyprland won't run as root, and the tests should see what a user sees.
+      - name: Run test suites as an unprivileged user
+        run: |
+          useradd --create-home tester
+          chown -R tester "$GITHUB_WORKSPACE"
+          runuser -u tester -- Scripts/tests/run.sh

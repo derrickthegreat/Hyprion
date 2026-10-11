@@ -8,10 +8,10 @@ Hyprion is an opinionated, independently maintained fork of [HyDE-Project/HyDE](
 2. Make the change. Follow [COMMIT_MESSAGE_GUIDELINES.md](COMMIT_MESSAGE_GUIDELINES.md) for the commit message.
 3. If the change is visible to a user, add a line under `## Unreleased` in `CHANGELOG.md`. Describe what the user sees, not how the code changed.
 4. Run what applies before pushing:
+   - `Scripts/tests/run.sh`, which runs every suite under `Scripts/tests/`. CI runs it on every push and pull request, in an Arch container with Hyprland installed. Locally, the Hyprland config check is skipped if Hyprland isn't installed.
    - `bash -n` on every shell script you touched
-   - `lua Scripts/tests/lua/config_toml_test.lua` from the repo root if you touched the Lua config loader
-   - `python3 Scripts/tests/waybar/test_waybar.py` from the repo root if you touched `waybar.py`
    - `Scripts/install.sh -r` on a scratch machine or VM for anything that changes what gets deployed
+   - If you change how HyDE's Lua handles binds or other user config, add a user config to `Scripts/tests/hyprland/fixtures/` that does what you're worried about. Each fixture is loaded by the real `Hyprland --verify-config`, which catches crashes the stubbed Lua tests can't.
 5. Open a pull request against `main`.
 
 ## Pulling from upstream
@@ -24,7 +24,7 @@ git log --oneline main..upstream/master -- <path>   # see what changed
 git cherry-pick <sha>
 ```
 
-Their CI, release promotion scripts and the `tests` submodule were removed from this fork on purpose. Do not bring them back with a cherry-pick.
+Their CI, release promotion scripts and the `tests` submodule were removed from this fork on purpose. Do not bring them back with a cherry-pick. This fork's own CI is `.github/workflows/tests.yml`.
 
 ## Where things live
 
