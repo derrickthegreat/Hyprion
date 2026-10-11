@@ -14,6 +14,12 @@ Hyprion is an opinionated, independently maintained fork of [HyDE-Project/HyDE](
    - If you change how HyDE's Lua handles binds or other user config, add a user config to `Scripts/tests/hyprland/fixtures/` that does what you're worried about. Each fixture is loaded by the real `Hyprland --verify-config`, which catches crashes the stubbed Lua tests can't.
 5. Open a pull request against `main`.
 
+## Trying a change on your own desktop
+
+`Scripts/deploy_live.py` copies this checkout into your home the way `install.sh -r` would, for the dots you have installed. Run it without arguments first. It lists what it would write, then loads the result in Hyprland (`--verify-config`, with your own `hyprland.lua`) in a scratch copy, so a config that would crash your session is caught before anything is written. `--apply` deploys, with Hyprland's autoreload paused until every file is in place. `--rollback` undoes the last deploy and works from a TTY.
+
+It only replaces files that match a version this repo produced. A file you edited, or one wallbash generates, is listed and left alone unless you name it with `--force`. "preserve" files such as your `hyprland.lua` are never written.
+
 ## Pulling from upstream
 
 Upstream stays configured as the `upstream` remote and is a cherry-pick source, not a merge target:
