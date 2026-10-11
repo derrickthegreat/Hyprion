@@ -310,6 +310,34 @@ class SessionInstallTests(SandboxTestCase):
         self.assertIn("Could not install the Hyprion session", result.stdout + result.stderr)
 
 
+class VersionInfoTests(SandboxTestCase):
+    def setUp(self):
+        super().setUp()
+        # version.sh reads the checkout with git, which the sandbox only records.
+        self.box.stub("git", 'exec /usr/bin/git "$@"')
+        self.version = self.box.home / ".local/state/hyde/version"
+
+    def test_restore_records_the_installed_checkout(self):
+        result = self.box.source("save_version_info")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=SCRIPTS.parent,
+                              capture_output=True, text=True, check=True).stdout.strip()
+        record = self.version.read_text()
+        self.assertIn(f"HYDE_CLONE_PATH='{SCRIPTS.parent}'", record)
+        self.assertIn(f"HYDE_COMMIT_HASH='{head}'", record)
+
+    def test_test_run_records_nothing(self):
+        result = self.box.source("save_version_info", flg_DryRun="1")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("Would save version info", result.stdout)
+        self.assertFalse(self.version.exists())
+
+    def test_install_sh_saves_it_after_the_deploy(self):
+        install = (SCRIPTS / "install.sh").read_text()
+        self.assertEqual(install.count("save_version_info"), 1)
+        self.assertLess(install.index("Dotfiles deployed"), install.index("save_version_info"))
+
+
 class UninstallTests(SandboxTestCase):
     def setUp(self):
         super().setUp()

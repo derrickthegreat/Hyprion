@@ -517,6 +517,7 @@ EOF
 			print_log -g "[DEEZ-DOTS] " -b "complete :: " "Dotfiles deployed"
 		fi
 	fi
+	save_version_info
 
 	"${installDir}/restore_thm.sh"
 	print_log -g "[THEME] " -b "generate :: " "Wallpaper cache..."

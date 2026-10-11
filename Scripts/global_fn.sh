@@ -380,3 +380,15 @@ run_pending_migrations() {
     [ "${pending}" -gt 0 ] || echo "No outstanding migrations in ${migrationDir}."
     return 0
 }
+
+# Records which checkout was installed, for `hyde-shell version`. restore_cfg.sh
+# used to do this, and nothing has called it since the restore moved to deez,
+# so the record kept naming whatever was installed before that.
+save_version_info() {
+    if [ "${flg_DryRun:-0}" -eq 1 ]; then
+        print_log -y "[VERSION] " -b "dry-run :: " "Would save version info"
+        return 0
+    fi
+    (cd "${cloneDir}" && "${cloneDir}/Scripts/version.sh" --cache) ||
+        print_log -y "[VERSION] " -b " :: " "Could not save version info; hyde-shell version will be out of date"
+}
