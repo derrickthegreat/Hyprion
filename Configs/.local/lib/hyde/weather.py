@@ -71,6 +71,7 @@ class WeatherDay(TypedDict):
 
 class NearestArea(TypedDict):
     areaName: list[TextValue]
+    region: list[TextValue]
     country: list[TextValue]
 
 
@@ -81,6 +82,8 @@ class WttrResponse(TypedDict):
 
 
 ### Constants ###
+DEFAULT_LOCATION_FORMAT = "{city}, {country}"
+
 WEATHER_CODES = {
     **dict.fromkeys(["113"], "☀️ "),
     **dict.fromkeys(["116"], "⛅ "),
@@ -223,14 +226,30 @@ def get_sunset(day: WeatherDay) -> str:
     return get_timestamp(day["astronomy"][0]["sunset"])
 
 
-def get_city_name(weather: WttrResponse) -> str:
-    """Returns the city name from the weather data."""
-    return weather["nearest_area"][0]["areaName"][0]["value"]
+def get_area_value(area: NearestArea, key: str) -> str:
+    """Returns one nearest_area field, or "" when wttr.in left it out."""
+    values = cast(dict[str, object], area).get(key)
+    if isinstance(values, list) and values and isinstance(values[0], dict):
+        value = values[0].get("value")
+        if isinstance(value, str):
+            return value
+    return ""
 
 
-def get_country_name(weather: WttrResponse) -> str:
-    """Returns the country name from the weather data."""
-    return weather["nearest_area"][0]["country"][0]["value"]
+def get_location_name(weather: WttrResponse, location_format: str) -> str:
+    """Fills {city}, {region} and {country} into location_format; a format that doesn't parse falls back to the default."""
+    area = weather["nearest_area"][0]
+    fields = {
+        "city": get_area_value(area, "areaName"),
+        "region": get_area_value(area, "region"),
+        "country": get_area_value(area, "country"),
+    }
+    try:
+        name = location_format.format_map(fields)
+    except (AttributeError, IndexError, KeyError, ValueError):
+        name = DEFAULT_LOCATION_FORMAT.format_map(fields)
+    # An empty field would otherwise leave a dangling ", "
+    return name.strip(" ,")
 
 
 def format_time(time: str) -> str:
@@ -459,6 +478,7 @@ def main() -> None:
         " ", "_"
     )  # Name of the location to get the weather from (default: '')
     # Parse the location to wttr.in format (snake_case)
+    location_format = os.getenv("WEATHER_LOCATION_FORMAT") or DEFAULT_LOCATION_FORMAT
 
     ### Main Logic ###
     data: dict[str, str] = {}
@@ -484,7 +504,7 @@ def main() -> None:
     if show_icon:
         data["text"] = get_weather_icon(current_weather) + data["text"]
     if show_location:
-        data["text"] += f" | {get_city_name(weather)}, {get_country_name(weather)}"
+        data["text"] += f" | {get_location_name(weather, location_format)}"
 
     # waybar tooltip
     data["tooltip"] = ""
@@ -493,7 +513,7 @@ def main() -> None:
             f"<b>{get_description(current_weather)} {get_temperature(current_weather)}</b>\n"
         )
         data["tooltip"] += f"Feels like: {get_feels_like(current_weather)}\n"
-        data["tooltip"] += f"Location: {get_city_name(weather)}, {get_country_name(weather)}\n"
+        data["tooltip"] += f"Location: {get_location_name(weather, location_format)}\n"
         data["tooltip"] += f"Wind: {get_wind_speed(current_weather)}\n"
         data["tooltip"] += f"Humidity: {current_weather['humidity']}%\n"
     # Get the weather forecast for the next 2 days

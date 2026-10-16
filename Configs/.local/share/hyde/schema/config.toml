@@ -165,6 +165,7 @@ show_location = true  # Show the location in waybar.
 show_today = true  # Show detailed description of today in tooltip.
 forecast_days = 3  # Number of days to show forecast (0-3).
 location = ""  # Location/coordinates string for the weather output.
+location_format = "{city}, {country}"  # Location text in waybar and the tooltip. Placeholders: {city}, {region} (state or province), {country}.
 
 # 'hyde-shell cava stdout' configuration.
 [cava.stdout]

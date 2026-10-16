@@ -680,6 +680,11 @@
                     "default": "",
                     "description": "Location/coordinates string for the weather output.",
                     "type": "string"
+                },
+                "location_format": {
+                    "default": "{city}, {country}",
+                    "description": "Location text in waybar and the tooltip. Placeholders: {city}, {region} (state or province), {country}.",
+                    "type": "string"
                 }
             }
         },

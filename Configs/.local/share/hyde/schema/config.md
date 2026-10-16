@@ -475,6 +475,7 @@ Weather configuration.
 | --- | ----------- | ------- |
 | forecast_days | Number of days to show forecast (0-3). | 3 |
 | location | Location/coordinates string for the weather output. |  |
+| location_format | Location text in waybar and the tooltip. Placeholders: {city}, {region} (state or province), {country}. | {city}, {country} |
 | show_icon | Show the weather icon in waybar. | true |
 | show_location | Show the location in waybar. | true |
 | show_today | Show detailed description of today in tooltip. | true |
