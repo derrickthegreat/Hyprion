@@ -443,7 +443,9 @@ def run_upgrades(names: list[str], width: int) -> tuple[list[str], list[str]]:
             print(paint(f"\nSkipping {name}: {', '.join(blocked)} didn't finish updating.", YELLOW))
             failed.append(name)
             continue
-        print(f"\n{MANAGER_ICONS.get(name, DEFAULT_MANAGER_ICON)} {paint(f'Updating {name}', BOLD)}")
+        icon = MANAGER_ICONS.get(name, DEFAULT_MANAGER_ICON)
+        # Same accent as the manager's block in the summary, so each one is easy to find in the scrollback
+        print(f"\n{paint(f'{icon} Updating {name}', BOLD, MAGENTA)}")
         print_rule(width)
         try:
             pm.call_module(state_for(name, color_mode="always"), "upgrade")
@@ -453,8 +455,8 @@ def run_upgrades(names: list[str], width: int) -> tuple[list[str], list[str]]:
     return done, failed
 
 
-def print_after(done: list[str], failed: list[str], pacnew_before: list[str], width: int) -> list[str]:
-    """Report what the update left to do. Returns the orphaned packages."""
+def print_after(done: list[str], failed: list[str], pacnew_before: list[str], width: int) -> tuple[list[str], str | None]:
+    """Report what the update left to do. Returns the orphaned packages and what clearing the cache would free."""
     print()
     print_rule(width)
     print(paint("After the update", BOLD))
@@ -472,8 +474,8 @@ def print_after(done: list[str], failed: list[str], pacnew_before: list[str], wi
         print(f"   {ICON_ORPHANS} {plural(len(orphans), 'orphaned package')}, nothing installed needs them")
     savings = call_hook("cache_savings")
     if savings:
-        print(f"   {ICON_CACHE} {savings} of old packages in the cache, clear with {paint('sudo paccache -r', CYAN)}")
-    return orphans
+        print(f"   {ICON_CACHE} {savings} of old packages in the cache")
+    return orphans, savings
 
 
 def pick_orphans(orphans: list[str]) -> list[str]:
@@ -522,6 +524,14 @@ def clean_orphans(orphans: list[str]) -> None:
     if kept and prompt_yes_no(f"Mark the other {plural(len(kept), 'orphan')} as explicitly installed so they stop showing up?", default_yes=False):
         if not call_hook("mark_explicit", kept, default=False):
             print(paint("Couldn't mark them, they'll show up again next time.", YELLOW))
+
+
+def offer_cache_clean(savings: str) -> None:
+    """Offer `paccache -r`. Defaults to yes: it keeps the three newest versions, so downgrades still work."""
+    if not prompt_yes_no(f"Clear {savings} of old packages from the cache?"):
+        return
+    if not call_hook("clear_cache", default=False):
+        print(paint("Cache left as it was.", YELLOW))
 
 
 def offer_restart(upgraded: list[Pending], kernels: set[str]) -> bool:
@@ -575,7 +585,7 @@ def interactive() -> int:
             done, failed = run_upgrades(chosen, width)
             upgraded = [pkg for manager in updates if manager.name in done for pkg in manager.packages or []]
             exit_code = 1 if failed else 0
-            orphans = print_after(done, failed, pacnew_before, width)
+            orphans, savings = print_after(done, failed, pacnew_before, width)
             remaining = collect_updates(progress=True)
             store_records(remaining)
             left = total_updates(remaining)
@@ -583,6 +593,8 @@ def interactive() -> int:
                 print("   " + paint(f"{plural(left, 'update')} still pending", YELLOW))
             if orphans:
                 clean_orphans(orphans)
+            if savings:
+                offer_cache_clean(savings)
         else:
             print(paint("\nSkipped updates.", YELLOW))
     refresh_waybar()

@@ -216,6 +216,11 @@ def cache_savings(ctx) -> str | None:
     return match.group(1) if match else None
 
 
+def clear_cache(ctx) -> bool:
+    """Run `paccache -r`: keep the three newest versions of each package, delete the rest."""
+    return ctx.run(["sudo", "paccache", "-r"], check=False).returncode == 0
+
+
 def _pending_downloads(ctx, db_path: str) -> dict[str, tuple[str, int]]:
     """Map each package `pacman -Su` would fetch to (version, download bytes), using checkupdates' database."""
     output = ctx.capture(

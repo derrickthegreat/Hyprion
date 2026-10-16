@@ -192,6 +192,32 @@ class OrphanTests(unittest.TestCase):
         self.assertEqual(self.clean(["p"], picked=["meson"], removed=False), [("remove_orphans", ["meson"])])
 
 
+class CacheTests(unittest.TestCase):
+    def offer(self, answer, cleared=True):
+        calls = []
+
+        def hook(name, *args, default=None):
+            calls.append(name)
+            return cleared
+
+        with mock.patch("builtins.input", return_value=answer), \
+                mock.patch.object(su, "call_hook", hook), \
+                contextlib.redirect_stdout(io.StringIO()) as out:
+            su.offer_cache_clean("13.94 GiB")
+        return calls, out.getvalue()
+
+    def test_enter_clears(self):
+        self.assertEqual(self.offer("")[0], ["clear_cache"])
+
+    def test_no_leaves_the_cache(self):
+        self.assertEqual(self.offer("n")[0], [])
+
+    def test_failed_clear_says_so(self):
+        calls, out = self.offer("y", cleared=False)
+        self.assertEqual(calls, ["clear_cache"])
+        self.assertIn("Cache left as it was", out)
+
+
 class PacmanBackendTests(unittest.TestCase):
     def test_parse_update_lines(self):
         output = "foo 1.0-1 -> 1.1-1\n\x1b[1mbar\x1b[0m 2-1 -> 3-1\nheld 1-1 -> 2-1 [ignored]\n:: warning\n"

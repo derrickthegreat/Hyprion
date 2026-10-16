@@ -21,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Branding: the fork is now called Hyprion and lives at `github.com/derrickthegreat/Hyprion`. The README, installer banner, Waybar GitHub button, config schema URL and update instructions use the new name and repo. `hyde-shell`, `~/.config/hyde` and the `HYDE_*` variables keep their names
 - Docs: the README, KEYBINDINGS and their translations show the installer's ASCII banner instead of `hyde_banner.png`, which still read HYDE. The README no longer carries upstream's all-contributors badge and table, and `.all-contributorsrc` is gone; upstream's contributors are still credited in `CONTRIBUTORS.md`
 - Scripts: refactor hyde-shell open to use config.toml , mime . --fallback resolution handling.
+- System update: after updating, it asks whether to clear old packages from the pacman cache, with yes as the default, instead of printing the `sudo paccache -r` command for you to run. paccache keeps the three newest versions of each package, so downgrades still work. Each manager's "Updating" header is bold magenta, like its block in the summary, so it's easy to find in the scrollback
 - Scripts: `Scripts/restore_cfg.sh` is gone. Nothing has run it since restores moved to deez, and the one job it still did, recording which checkout was installed, is now part of the restore
 
 
