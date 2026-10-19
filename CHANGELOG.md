@@ -97,6 +97,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Shell: `hyde-shell` and the lock screen no longer need the `which` package, which only base-devel brings in
 - Installer: an unattended install no longer stops at the SDDM theme question. With nobody to answer it, the post-install ended there; it now takes the default theme
 - Scripts: values that were split on spaces are now quoted: the state file the clipboard and screenshot scripts load, the Firefox archives the app restore unpacks, the GTK and icon theme in the Flatpak overrides, and the waydeeper model name. shellcheck, which CI now runs, found them
+- Spotify: the wallbash Spotify theme sets itself up once `spicetify-cli` is installed. Wallbash skipped the template until `~/.config/spicetify/Themes/Sleek` existed, and only `spotify.sh`, which that template runs, created it. The colours now render to `~/.cache/hyde/wallbash/spotify.ini` and `spotify.sh` installs Sleek and copies them in. Spotify is no longer left running with a DevTools port open: `spicetify watch -s` started it with `--remote-debugging-port=9222 --remote-allow-origins=*`, so any local process could drive it. New colours restart Spotify instead, unless it's playing, in which case they show at its next start. Restarts keep the flags from `spotify-launcher.conf` or `spotify-flags.conf` instead of only `--ozone-platform=wayland`, setup no longer opens Spotify when it was closed, and Spotify is patched again after an update replaces its files
 
 ## v26.08.21
 
