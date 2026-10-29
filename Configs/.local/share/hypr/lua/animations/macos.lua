@@ -17,8 +17,9 @@ local prod = function(ds)
 end
 
 
-hl.curve("macOpen", {type = "spring", mass = 1, stiffness = 110, dampening = 16})
-hl.curve("macBounce", {type = "spring", mass = 1, stiffness = 80, dampening = 10})
+-- Hyprland 0.57 renamed dampening to damping; 0.56 only reads dampening
+hl.curve("macOpen", {type = "spring", mass = 1, stiffness = 110, damping = 16, dampening = 16})
+hl.curve("macBounce", {type = "spring", mass = 1, stiffness = 80, damping = 10, dampening = 10})
 hl.curve("macSmooth", {type = "bezier", points = {{0.25, 0.1}, {0.25, 1.0}}})
 hl.animation({leaf = "fadeIn", enabled = true, speed = prod(8), bezier = "default"})
 hl.animation({leaf = "fadeOut", enabled = true, speed = prod(8), bezier = "default"})

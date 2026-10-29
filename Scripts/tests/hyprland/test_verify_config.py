@@ -30,6 +30,7 @@ HYPRLAND = shutil.which("Hyprland", path="/usr/bin:/bin")
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 STOCK_CONFIG = REPO / "Configs/.config/hypr/hyprland.lua"
 EXAMPLE_CONFIG = REPO / "Source/examples/hyprland.lua"
+ANIMATIONS = REPO / "Configs/.local/share/hypr/lua/animations"
 PR_SET_CHILD_SUBREAPER = 36
 
 
@@ -107,6 +108,16 @@ class VerifyConfigTests(unittest.TestCase):
         for fixture in fixtures:
             with self.subTest(fixture=fixture.name):
                 self.assertLoads(self.verify(f"{stock}\n{fixture.read_text()}"))
+
+    def test_animation_presets_load(self):
+        # The stock config only loads the default preset; the rest load when picked
+        # from the menu, so each is checked on top of it here.
+        presets = sorted(ANIMATIONS.glob("*.lua"))
+        self.assertTrue(presets, f"no animation presets in {ANIMATIONS}")
+        stock = STOCK_CONFIG.read_text()
+        for preset in presets:
+            with self.subTest(preset=preset.name):
+                self.assertLoads(self.verify(f'{stock}\ndofile("{preset}")\n'))
 
     def test_a_broken_user_config_fails(self):
         # Proves the user config is loaded at all, so the passes above mean something.

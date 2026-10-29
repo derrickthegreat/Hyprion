@@ -44,6 +44,16 @@ def canonical_combo(modmask, key):
     return " + ".join(mods)
 
 
+def is_lua_bind(dispatcher):
+    """True for a bind hyprctl reports without a usable dispatcher. Up to
+    Hyprland 0.56 that's "__lua"; from 0.57 it's "HL.Dispatcher(<name>)" or
+    "function: 0x...". The arg is an opaque registry reference either way.
+    """
+    if not isinstance(dispatcher, str):
+        return False
+    return dispatcher == "__lua" or dispatcher.startswith(("HL.Dispatcher(", "function: "))
+
+
 def _escape_lua_string(value):
     """Escapes a string for embedding inside a double-quoted Lua string
     literal. A raw newline would both break Lua's own quoted-string syntax
@@ -63,7 +73,7 @@ def load_bind_commands():
     """Reads the combo->command cache hyde/binds.lua writes on every config
     load (see Configs/.local/share/hypr/lua/hyde/binds.lua). Missing file,
     unreadable file, malformed JSON, or JSON that isn't a flat string->string
-    object all resolve to an empty map -- __lua binds simply stay
+    object all resolve to an empty map -- Lua binds simply stay
     unresolved, which is the existing, already-correct fallback behavior for
     binds that can't be reduced to one command at all.
     """
@@ -472,14 +482,14 @@ def expand_meta_data(binds_data, bind_commands=None):
         bind["mod_display"] = map_modDisplay(bind["modmask"])
 
         # A Lua-registered bind (#1996): hyprctl only ever exposes it as an
-        # opaque "__lua" registry reference, which Hyprland itself has no way
-        # to dispatch from the outside. If hyde/binds.lua's cache has the
+        # opaque registry reference, which Hyprland itself has no way to
+        # dispatch from the outside. If hyde/binds.lua's cache has the
         # command this exact combo was built from, rewrite it into a fresh
         # exec_cmd call instead -- that runs the same way any other dispatch
         # does. A combo the cache doesn't have (window/workspace operations,
         # or any bind not built from hl.dsp.exec_cmd) is left exactly as it
         # was; that's the documented limit, not a bug.
-        if bind["dispatcher"] == "__lua":
+        if is_lua_bind(bind["dispatcher"]):
             combo = canonical_combo(bind["modmask"], bind["key"])
             command = bind_commands.get(combo) if combo else None
             if command:

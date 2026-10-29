@@ -13,8 +13,9 @@ local prod = function(ds)
     return ds * hyde.config.anim.duration_scale
 end
 
-hl.curve("gnomeOpen", {type = "spring", mass = 1, stiffness = 100, dampening = 14})
-hl.curve("gnomeClose", {type = "spring", mass = 1, stiffness = 90, dampening = 16})
+-- Hyprland 0.57 renamed dampening to damping; 0.56 only reads dampening
+hl.curve("gnomeOpen", {type = "spring", mass = 1, stiffness = 100, damping = 14, dampening = 14})
+hl.curve("gnomeClose", {type = "spring", mass = 1, stiffness = 90, damping = 16, dampening = 16})
 hl.curve("gnomeFade", {type = "bezier", points = {{0.25, 0.1}, {0.25, 1.0}}})
 
 hl.animation({leaf = "windowsIn", enabled = true, speed = prod(7), spring = "gnomeOpen", style = "gnomed"})

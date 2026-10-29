@@ -3,12 +3,12 @@
 # runs this), falling back to Hyprland's safe mode instead of the greeter.
 #
 # start-hyprland is meant to restart Hyprland in safe mode after a crash, but
-# 0.56.2 loses the exit status ("Couldn't waitpid for hyprland: No child
-# processes") and reports every crash as a clean exit. A config that crashed
-# Hyprland at load therefore bounced each login back to SDDM. This checks the
-# config before starting, and starts safe mode itself when the config doesn't
-# load or the session crashed. Safe mode skips the config and has a button to
-# load it once it's fixed.
+# 0.56.2 and 0.57.0 lose the exit status ("Couldn't waitpid for hyprland: No
+# child processes") and report every crash as a clean exit. A config that
+# crashed Hyprland at load therefore bounced each login back to SDDM. This
+# checks the config before starting, and starts safe mode itself when the
+# config doesn't load or the session crashed. Safe mode skips the config and
+# has a button to load it once it's fixed.
 #
 # What happened is logged to $XDG_STATE_HOME/hyde/session/session.log, and the
 # output of the last config check to verify.log next to it.
