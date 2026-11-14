@@ -1,7 +1,26 @@
 import os
 import json
+import functools
+import re
 import socket as _socket
+import subprocess
 from typing import Union, Any
+
+
+def rofi_offsets_inward(version_output: str) -> bool:
+    """rofi 2.1 reads x-offset/y-offset as pointing inward from an east or south
+    anchor; 2.0 and older read them as screen right/down. Takes `rofi -v` output."""
+    match = re.search(r"(\d+)\.(\d+)", version_output or "")
+    return bool(match) and (int(match[1]), int(match[2])) >= (2, 1)
+
+
+@functools.lru_cache(maxsize=1)
+def _installed_rofi_offsets_inward() -> bool:
+    try:
+        out = subprocess.run(["rofi", "-v"], capture_output=True, text=True).stdout
+    except OSError:
+        return False
+    return rofi_offsets_inward(out)
 
 
 class HyprctlWrapper:
@@ -117,17 +136,18 @@ class HyprctlWrapper:
         mon_res[0] = mon_res[0] * 100 // mon_res[2]
         mon_res[1] = mon_res[1] * 100 // mon_res[2]
         cur_pos = [cursor_pos["x"] - mon_res[3], cursor_pos["y"] - mon_res[4]]
+        edge_sign = 1 if _installed_rofi_offsets_inward() else -1
 
         if cur_pos[0] >= mon_res[0] // 2:
             x_pos = "east"
-            x_off = -(mon_res[0] - cur_pos[0] - off_res[2])
+            x_off = edge_sign * (mon_res[0] - cur_pos[0] - off_res[2])
         else:
             x_pos = "west"
             x_off = cur_pos[0] - off_res[0]
 
         if cur_pos[1] >= mon_res[1] // 2:
             y_pos = "south"
-            y_off = -(mon_res[1] - cur_pos[1] - off_res[3])
+            y_off = edge_sign * (mon_res[1] - cur_pos[1] - off_res[3])
         else:
             y_pos = "north"
             y_off = cur_pos[1] - off_res[1]

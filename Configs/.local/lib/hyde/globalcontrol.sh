@@ -628,6 +628,19 @@ get_wallpaper_fill_color() {
     [[ $color =~ ^[0-9a-fA-F]{6}$ ]] || color="000000"
     echo "${color}ff"
 }
+# rofi 2.1 reads x-offset/y-offset as pointing inward from an east or south
+# anchor; 2.0 and older read them as screen right/down. Prints 1 or -1, the
+# sign an east/south menu's distance from its edge needs.
+rofi_edge_sign() {
+    local ver
+    ver=$(rofi -v 2>/dev/null)
+    if [[ $ver =~ ([0-9]+)\.([0-9]+) ]] &&
+        ((BASH_REMATCH[1] > 2 || (BASH_REMATCH[1] == 2 && BASH_REMATCH[2] >= 1))); then
+        echo 1
+    else
+        echo -1
+    fi
+}
 get_rofi_pos() {
     [[ -n $HYPRLAND_INSTANCE_SIGNATURE ]] || return 1
     readarray -t curPos < <(hyprctl cursorpos -j | jq -r '.x,.y')
@@ -655,16 +668,18 @@ get_rofi_pos() {
     # or south of the cursor ignored reserved space on that edge (e.g. a
     # bar) entirely. Caught by a reserved-margin test case with no HyDE
     # issue number of its own; found while testing #975's fix.
+    local edge_sign
+    edge_sign=$(rofi_edge_sign)
     if [ "${curPos[0]}" -ge "$((monRes[0] / 2))" ]; then
         local x_pos="east"
-        local x_off="-$((monRes[0] - curPos[0] - offRes[2]))"
+        local x_off="$((edge_sign * (monRes[0] - curPos[0] - offRes[2])))"
     else
         local x_pos="west"
         local x_off="$((curPos[0] - offRes[0]))"
     fi
     if [ "${curPos[1]}" -ge "$((monRes[1] / 2))" ]; then
         local y_pos="south"
-        local y_off="-$((monRes[1] - curPos[1] - offRes[3]))"
+        local y_off="$((edge_sign * (monRes[1] - curPos[1] - offRes[3])))"
     else
         local y_pos="north"
         local y_off="$((curPos[1] - offRes[1]))"
@@ -826,7 +841,7 @@ clamp_col_count() {
     ((count > max)) && count=$max
     printf "%d" "$count"
 }
-export -f get_hyprConf get_monitor_scale clamp_col_count get_wallpaper_fill_color get_rofi_pos is_hovered toml_write get_hashmap get_aurhlpr set_conf set_hash check_package get_themes print_log pkg_installed paste_string extract_thumbnail accepted_mime_types dconf_write send_notifs notify_saved_file export_hyde_config wallbash_state_is_complete get_screen_geometry fit_wallpaper wallpaper_fit_overrides get_wallpaper_fit_override set_wallpaper_fit_override get_crop_budget
+export -f get_hyprConf get_monitor_scale clamp_col_count get_wallpaper_fill_color rofi_edge_sign get_rofi_pos is_hovered toml_write get_hashmap get_aurhlpr set_conf set_hash check_package get_themes print_log pkg_installed paste_string extract_thumbnail accepted_mime_types dconf_write send_notifs notify_saved_file export_hyde_config wallbash_state_is_complete get_screen_geometry fit_wallpaper wallpaper_fit_overrides get_wallpaper_fit_override set_wallpaper_fit_override get_crop_budget
 
 ##
 # Fails the source when the generated-state directories could not be created,

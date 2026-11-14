@@ -25,16 +25,17 @@ monRes[0]=$((monRes[0] * 100 / monRes[2]))
 monRes[1]=$((monRes[1] * 100 / monRes[2]))
 curPos[0]=$((curPos[0] - monRes[3]))
 curPos[1]=$((curPos[1] - monRes[4]))
+edge_sign=$(rofi_edge_sign)
 if [ "${curPos[0]}" -ge "$((monRes[0] / 2))" ]; then
     x_pos="east"
-    x_off="-$((monRes[0] - curPos[0] - offRes[2]))"
+    x_off="$((edge_sign * (monRes[0] - curPos[0] - offRes[2])))"
 else
     x_pos="west"
     x_off="$((curPos[0] - offRes[0]))"
 fi
 if [ "${curPos[1]}" -ge "$((monRes[1] / 2))" ]; then
     y_pos="south"
-    y_off="-$((monRes[1] - curPos[1] - offRes[3]))"
+    y_off="$((edge_sign * (monRes[1] - curPos[1] - offRes[3])))"
 else
     y_pos="north"
     y_off="$((curPos[1] - offRes[1]))"

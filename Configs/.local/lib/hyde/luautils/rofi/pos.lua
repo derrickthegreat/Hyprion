@@ -32,6 +32,35 @@ local function resolve_axis(rel, dim, safe_start, safe_end, required)
     return dir_is_end, offset
 end
 
+-- rofi 2.1 reads x-offset/y-offset as pointing inward from an east or south
+-- anchor; 2.0 and older read them as screen right/down. Takes `rofi -v` output.
+function M.offsets_inward(version_output)
+    local major, minor = tostring(version_output or ""):match("(%d+)%.(%d+)")
+    major, minor = tonumber(major), tonumber(minor)
+    return major ~= nil and (major > 2 or (major == 2 and minor >= 1))
+end
+
+local inward_cache
+local function rofi_offsets_inward()
+    if inward_cache == nil then
+        local handle = io.popen("rofi -v 2>/dev/null")
+        local out = handle and handle:read("*a") or ""
+        if handle then
+            handle:close()
+        end
+        inward_cache = M.offsets_inward(out)
+    end
+    return inward_cache
+end
+
+-- resolve_axis returns end-anchored offsets in the old screen-direction form.
+function M.rofi_offset(dir_is_end, offset, inward)
+    if dir_is_end and inward then
+        return -offset
+    end
+    return offset
+end
+
 function M.get_rofi_pos(opts)
     opts = opts or {}
     local hyprctl = require("luautils.hypr.hyprctl")
@@ -77,6 +106,9 @@ function M.get_rofi_pos(opts)
     local y_is_south, y_off = resolve_axis(rel_y, l_h, safe_top, safe_bot, opts.min_height)
     local x_dir = x_is_east and "east" or "west"
     local y_dir = y_is_south and "south" or "north"
+    local inward = rofi_offsets_inward()
+    x_off = M.rofi_offset(x_is_east, x_off, inward)
+    y_off = M.rofi_offset(y_is_south, y_off, inward)
 
     local pos_str =
         string.format(
